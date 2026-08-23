@@ -1,0 +1,26 @@
+# Archivos compilados de Java
+*.class
+
+# Archivos empaquetados (OJO: exceptuamos tus librerías JFlex y CUP)
+*.jar
+*.war
+*.ear
+!/Librerias/*.jar
+
+# Carpetas de construcción y distribución de NetBeans
+/build/
+/dist/
+
+# Configuraciones privadas del usuario en NetBeans (¡Muy importante!)
+/nbproject/private/
+/nbproject/Makefile-*.mk
+/nbproject/Package-*.bash
+
+# Configuraciones de otros editores 
+.vscode/
+
+# Archivos de salida y diagramas (Graphviz, etc.)
+*.dot
+*.pdf
+# Si vas a exportar reportes o imágenes de tus autómatas, puedes ignorar la carpeta donde se generen:
+# /reportes/
