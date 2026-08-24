@@ -54,9 +54,19 @@ terminal COLON, COMMA;
 non terminal inicio;
 non terminal lista_instrucciones;
 non terminal instruccion;
-// ... (Aquí irán no terminales como 'estrategia', 'partida', 'reglas', etc.)
 
-// --- GRAMÁTICA INICIAL ---
+// Piezas de la Estrategia
+non terminal estrategia;
+non terminal tipo_jugador;
+non terminal accion_inicial;
+non terminal bloque_reglas;
+non terminal lista_reglas;
+non terminal regla;
+non terminal regla_else;
+non terminal accion;
+non terminal condicion; // Esta la expandiremos con operadores lógicos más adelante
+
+// --- GRAMÁTICA ---
 start with inicio;
 
 inicio ::= lista_instrucciones
@@ -66,6 +76,40 @@ lista_instrucciones ::= lista_instrucciones instruccion
                       | instruccion
                       ;
 
-// Le damos una estructura temporal para que CUP no se confunda
-instruccion ::= MAIN LBRACE RBRACE 
+// Por ahora, el archivo puede contener estrategias (luego agregaremos partidas y main)
+instruccion ::= estrategia
               ;
+
+// --- ESTRUCTURA DE LA ESTRATEGIA ---
+estrategia ::= tipo_jugador ID LBRACE 
+                  accion_inicial 
+                  bloque_reglas 
+               RBRACE
+             ;
+
+tipo_jugador ::= MAGE 
+               | WARRIOR 
+               ;
+
+accion_inicial ::= INITIAL COLON accion ;
+
+bloque_reglas ::= RULES COLON LBRACKET lista_reglas regla_else RBRACKET ;
+
+// La lista de reglas puede tener una o muchas reglas 'if'
+lista_reglas ::= lista_reglas regla
+               | regla
+               ;
+
+regla ::= IF condicion THEN accion COMMA ;
+
+regla_else ::= ELSE accion ;
+
+// --- CATÁLOGO DE ACCIONES ---
+accion ::= ARCANE_BOLT | FIREBALL | MAGIC_BARRIER | HEALING_RUNE | MEDITATE
+         | SLASH | HEAVY_STRIKE | SHIELD_BLOCK | WAR_CRY | REST
+         ;
+
+// --- CONDICIÓN (Estructura Temporal) ---
+// Para que CUP no marque error, pondremos una condición de prueba falsa.
+// En el siguiente paso construiremos el árbol de precedencia (&&, ||, >, <)
+condicion ::= SELF_HEALTH LTEQ INTEGER ;
