@@ -1,0 +1,68 @@
+package proyecto1.analizadores;
+
+import java_cup.runtime.*;
+
+// Código para el manejo de errores sintácticos
+parser code {:
+    public void syntax_error(Symbol s) {
+        System.out.println("Error Sintáctico en la Línea " + (s.left) + 
+                           " Columna " + s.right + ". No se esperaba el componente: " + s.value);
+        // Aquí conectaremos el reporte de errores visual más adelante
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
+        System.out.println("Error de sintaxis irrecuperable en la Línea " + (s.left) + 
+                           " Columna " + s.right + ". Componente: " + s.value);
+    }
+:}
+
+// --- DECLARACIÓN DE TERMINALES (Vienen del Lexer) ---
+
+// Tipos de datos e Identificadores
+terminal String ID;
+terminal Integer INTEGER;
+terminal Double FLOAT;
+
+// Palabras reservadas principales
+terminal MAGE, WARRIOR, IF, THEN, ELSE;
+terminal MATCH, PLAYERS, ROUNDS, SCORING, BONUSES;
+terminal MAIN, RUN, WITH, SEED;
+terminal INITIAL, RULES;
+
+// Acciones de Combate (Magos y Guerreros)
+terminal ARCANE_BOLT, FIREBALL, MAGIC_BARRIER, HEALING_RUNE, MEDITATE;
+terminal SLASH, HEAVY_STRIKE, SHIELD_BLOCK, WAR_CRY, REST;
+
+// Variables de estado y funciones
+terminal ROUND_NUMBER, TOTAL_ROUNDS, SELF_HEALTH, OPPONENT_HEALTH;
+terminal SELF_RESOURCE, OPPONENT_RESOURCE, SELF_SCORE, OPPONENT_SCORE;
+terminal SELF_HISTORY, OPPONENT_HISTORY, RANDOM;
+terminal GET_MOVE, LAST_MOVE, GET_MOVES_COUNT, GET_LAST_N_MOVES;
+
+// Propiedades de Puntuación
+terminal DAMAGE_POINT, HEALING_POINT, SUCCESSFUL_DEFENSE, VICTORY_BONUS;
+terminal FAILED_ACTION_PENALTY, MAGE_COMBO, MAGE_COMBO_POINTS;
+terminal WARRIOR_COMBO, WARRIOR_COMBO_POINTS, LOW_HEALTH_VICTORY;
+
+// Operadores y Símbolos
+terminal EQEQ, LTEQ, LBRACE, RBRACE; // Agregaremos el resto de operadores lógicos y relacionales luego
+
+// --- DECLARACIÓN DE NO TERMINALES (Reglas de la Gramática) ---
+non terminal inicio;
+non terminal lista_instrucciones;
+non terminal instruccion;
+// ... (Aquí irán no terminales como 'estrategia', 'partida', 'reglas', etc.)
+
+// --- GRAMÁTICA INICIAL ---
+start with inicio;
+
+inicio ::= lista_instrucciones
+         ;
+
+lista_instrucciones ::= lista_instrucciones instruccion
+                      | instruccion
+                      ;
+
+// Le damos una estructura temporal para que CUP no se confunda
+instruccion ::= MAIN LBRACE RBRACE 
+              ;
