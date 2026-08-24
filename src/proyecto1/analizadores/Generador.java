@@ -11,7 +11,7 @@ public class Generador {
         String rutaBase = "src/proyecto1/analizadores/";
         
         try {
-            System.out.println(" Iniciando generación de analizadores...");
+            System.out.println(" Iniciando generacion de analizadores...");
             
             // 1. Generar Lexer con JFlex
             String[] rutaJFlex = { rutaBase + "Lexer.jflex" };

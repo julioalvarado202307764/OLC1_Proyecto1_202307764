@@ -8,66 +8,79 @@ package proyecto1.analizadores;
 /** CUP generated class containing symbol constants. */
 public class sym {
   /* terminals */
-  public static final int GET_MOVES_COUNT = 44;
-  public static final int FIREBALL = 22;
-  public static final int SUCCESSFUL_DEFENSE = 48;
-  public static final int LOW_HEALTH_VICTORY = 55;
-  public static final int RANDOM = 41;
-  public static final int WITH = 17;
-  public static final int LTEQ = 57;
-  public static final int HEAVY_STRIKE = 27;
-  public static final int ARCANE_BOLT = 21;
-  public static final int MEDITATE = 25;
-  public static final int SLASH = 26;
-  public static final int FAILED_ACTION_PENALTY = 50;
-  public static final int WARRIOR_COMBO = 53;
-  public static final int OPPONENT_RESOURCE = 36;
-  public static final int SELF_RESOURCE = 35;
-  public static final int INTEGER = 3;
-  public static final int SCORING = 13;
-  public static final int MAGE = 5;
-  public static final int DAMAGE_POINT = 46;
-  public static final int SHIELD_BLOCK = 28;
-  public static final int MAGE_COMBO = 51;
-  public static final int MAGIC_BARRIER = 23;
-  public static final int MATCH = 10;
-  public static final int RULES = 20;
-  public static final int GET_LAST_N_MOVES = 45;
+  public static final int GT = 61;
   public static final int VICTORY_BONUS = 49;
+  public static final int REST = 30;
+  public static final int MAGE = 5;
+  public static final int OPPONENT_RESOURCE = 36;
+  public static final int SELF_HEALTH = 33;
+  public static final int SHIELD_BLOCK = 28;
+  public static final int ROUNDS = 12;
+  public static final int COMMA = 72;
   public static final int OPPONENT_SCORE = 38;
+  public static final int RBRACE = 66;
+  public static final int RANDOM = 41;
+  public static final int RPAREN = 70;
+  public static final int HEALING_RUNE = 24;
+  public static final int ARCANE_BOLT = 21;
+  public static final int RUN = 16;
+  public static final int HEAVY_STRIKE = 27;
+  public static final int GET_MOVE = 42;
+  public static final int LT = 60;
+  public static final int INTEGER = 3;
+  public static final int LBRACE = 65;
+  public static final int SELF_HISTORY = 39;
+  public static final int LPAREN = 69;
+  public static final int MAGE_COMBO_POINTS = 52;
+  public static final int NOT = 64;
+  public static final int MATCH = 10;
+  public static final int FLOAT = 4;
+  public static final int INITIAL = 19;
+  public static final int THEN = 8;
+  public static final int DAMAGE_POINT = 46;
+  public static final int FIREBALL = 22;
+  public static final int GET_LAST_N_MOVES = 45;
+  public static final int SEED = 18;
+  public static final int SLASH = 26;
+  public static final int WARRIOR_COMBO = 53;
+  public static final int HEALING_POINT = 47;
+  public static final int LAST_MOVE = 43;
+  public static final int SCORING = 13;
+  public static final int LOW_HEALTH_VICTORY = 55;
+  public static final int ELSE = 9;
+  public static final int GTEQ = 59;
+  public static final int ROUND_NUMBER = 31;
+  public static final int EQEQ = 56;
+  public static final int EOF = 0;
+  public static final int MEDITATE = 25;
+  public static final int PLAYERS = 11;
   public static final int MAIN = 15;
+  public static final int LTEQ = 58;
+  public static final int OR = 63;
+  public static final int RULES = 20;
+  public static final int error = 1;
+  public static final int MAGE_COMBO = 51;
+  public static final int FAILED_ACTION_PENALTY = 50;
+  public static final int SELF_RESOURCE = 35;
   public static final int IF = 7;
   public static final int ID = 2;
-  public static final int BONUSES = 14;
-  public static final int INITIAL = 19;
-  public static final int EOF = 0;
-  public static final int ROUNDS = 12;
-  public static final int error = 1;
-  public static final int PLAYERS = 11;
-  public static final int TOTAL_ROUNDS = 32;
-  public static final int EQEQ = 56;
-  public static final int SELF_HEALTH = 33;
-  public static final int SELF_HISTORY = 39;
-  public static final int ROUND_NUMBER = 31;
-  public static final int WARRIOR_COMBO_POINTS = 54;
-  public static final int LAST_MOVE = 43;
-  public static final int REST = 30;
-  public static final int LBRACE = 58;
-  public static final int ELSE = 9;
-  public static final int OPPONENT_HEALTH = 34;
-  public static final int GET_MOVE = 42;
-  public static final int FLOAT = 4;
-  public static final int RBRACE = 59;
-  public static final int THEN = 8;
-  public static final int SEED = 18;
-  public static final int WAR_CRY = 29;
+  public static final int COLON = 71;
   public static final int WARRIOR = 6;
-  public static final int OPPONENT_HISTORY = 40;
-  public static final int MAGE_COMBO_POINTS = 52;
+  public static final int WARRIOR_COMBO_POINTS = 54;
+  public static final int WAR_CRY = 29;
+  public static final int OPPONENT_HEALTH = 34;
+  public static final int BONUSES = 14;
+  public static final int RBRACKET = 68;
+  public static final int GET_MOVES_COUNT = 44;
+  public static final int MAGIC_BARRIER = 23;
+  public static final int TOTAL_ROUNDS = 32;
+  public static final int NEQ = 57;
+  public static final int AND = 62;
+  public static final int SUCCESSFUL_DEFENSE = 48;
+  public static final int LBRACKET = 67;
   public static final int SELF_SCORE = 37;
-  public static final int RUN = 16;
-  public static final int HEALING_POINT = 47;
-  public static final int HEALING_RUNE = 24;
+  public static final int OPPONENT_HISTORY = 40;
+  public static final int WITH = 17;
   public static final String[] terminalNames = new String[] {
   "EOF",
   "error",
@@ -126,9 +139,22 @@ public class sym {
   "WARRIOR_COMBO_POINTS",
   "LOW_HEALTH_VICTORY",
   "EQEQ",
+  "NEQ",
   "LTEQ",
+  "GTEQ",
+  "LT",
+  "GT",
+  "AND",
+  "OR",
+  "NOT",
   "LBRACE",
-  "RBRACE"
+  "RBRACE",
+  "LBRACKET",
+  "RBRACKET",
+  "LPAREN",
+  "RPAREN",
+  "COLON",
+  "COMMA"
   };
 }
 

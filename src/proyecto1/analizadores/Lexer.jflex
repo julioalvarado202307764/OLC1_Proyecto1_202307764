@@ -28,11 +28,24 @@ Identifier     = [a-zA-Z_] [a-zA-Z0-9_]*
   "warrior"        { return new Symbol(sym.WARRIOR, yyline + 1, yycolumn + 1, yytext()); }
   "if"             { return new Symbol(sym.IF, yyline + 1, yycolumn + 1, yytext()); }
 
-  // Operadores y símbolos
+// Operadores y símbolos
   "=="             { return new Symbol(sym.EQEQ, yyline + 1, yycolumn + 1, yytext()); }
+  "!="             { return new Symbol(sym.NEQ, yyline + 1, yycolumn + 1, yytext()); }
   "<="             { return new Symbol(sym.LTEQ, yyline + 1, yycolumn + 1, yytext()); }
+  ">="             { return new Symbol(sym.GTEQ, yyline + 1, yycolumn + 1, yytext()); }
+  "<"              { return new Symbol(sym.LT, yyline + 1, yycolumn + 1, yytext()); }
+  ">"              { return new Symbol(sym.GT, yyline + 1, yycolumn + 1, yytext()); }
+  "&&"             { return new Symbol(sym.AND, yyline + 1, yycolumn + 1, yytext()); }
+  "||"             { return new Symbol(sym.OR, yyline + 1, yycolumn + 1, yytext()); }
+  "!"              { return new Symbol(sym.NOT, yyline + 1, yycolumn + 1, yytext()); }
   "{"              { return new Symbol(sym.LBRACE, yyline + 1, yycolumn + 1, yytext()); }
-  "}"              { return new Symbol(sym.RBRACE, yyline + 1, yycolumn + 1, yytext()); }  
+  "}"              { return new Symbol(sym.RBRACE, yyline + 1, yycolumn + 1, yytext()); }
+  "["              { return new Symbol(sym.LBRACKET, yyline + 1, yycolumn + 1, yytext()); }
+  "]"              { return new Symbol(sym.RBRACKET, yyline + 1, yycolumn + 1, yytext()); }
+  "("              { return new Symbol(sym.LPAREN, yyline + 1, yycolumn + 1, yytext()); }
+  ")"              { return new Symbol(sym.RPAREN, yyline + 1, yycolumn + 1, yytext()); }
+  ":"              { return new Symbol(sym.COLON, yyline + 1, yycolumn + 1, yytext()); }
+  ","              { return new Symbol(sym.COMMA, yyline + 1, yycolumn + 1, yytext()); }
   // --- Acciones de Mago ---
   "ARCANE_BOLT"    { return new Symbol(sym.ARCANE_BOLT, yyline + 1, yycolumn + 1); }
   "FIREBALL"       { return new Symbol(sym.FIREBALL, yyline + 1, yycolumn + 1); }

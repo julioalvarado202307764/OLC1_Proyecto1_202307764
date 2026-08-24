@@ -45,7 +45,10 @@ terminal FAILED_ACTION_PENALTY, MAGE_COMBO, MAGE_COMBO_POINTS;
 terminal WARRIOR_COMBO, WARRIOR_COMBO_POINTS, LOW_HEALTH_VICTORY;
 
 // Operadores y Símbolos
-terminal EQEQ, LTEQ, LBRACE, RBRACE; // Agregaremos el resto de operadores lógicos y relacionales luego
+terminal EQEQ, NEQ, LTEQ, GTEQ, LT, GT;
+terminal AND, OR, NOT;
+terminal LBRACE, RBRACE, LBRACKET, RBRACKET, LPAREN, RPAREN;
+terminal COLON, COMMA;
 
 // --- DECLARACIÓN DE NO TERMINALES (Reglas de la Gramática) ---
 non terminal inicio;
