@@ -2,12 +2,10 @@ package proyecto1.analizadores;
 
 import java_cup.runtime.*;
 
-// Código para el manejo de errores sintácticos
 parser code {:
     public void syntax_error(Symbol s) {
         System.out.println("Error Sintáctico en la Línea " + (s.left) + 
                            " Columna " + s.right + ". No se esperaba el componente: " + s.value);
-        // Aquí conectaremos el reporte de errores visual más adelante
     }
 
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
@@ -16,57 +14,54 @@ parser code {:
     }
 :}
 
-// --- DECLARACIÓN DE TERMINALES (Vienen del Lexer) ---
-
-// Tipos de datos e Identificadores
+// ==========================================
+// 1. DECLARACIÓN DE TERMINALES
+// ==========================================
 terminal String ID;
 terminal Integer INTEGER;
 terminal Double FLOAT;
 
-// Palabras reservadas principales
 terminal MAGE, WARRIOR, IF, THEN, ELSE;
 terminal MATCH, PLAYERS, ROUNDS, SCORING, BONUSES;
-terminal MAIN, RUN, WITH, SEED;
-terminal INITIAL, RULES;
+terminal MAIN, RUN, WITH, SEED, INITIAL, RULES;
 
-// Acciones de Combate (Magos y Guerreros)
 terminal ARCANE_BOLT, FIREBALL, MAGIC_BARRIER, HEALING_RUNE, MEDITATE;
 terminal SLASH, HEAVY_STRIKE, SHIELD_BLOCK, WAR_CRY, REST;
 
-// Variables de estado y funciones
 terminal ROUND_NUMBER, TOTAL_ROUNDS, SELF_HEALTH, OPPONENT_HEALTH;
 terminal SELF_RESOURCE, OPPONENT_RESOURCE, SELF_SCORE, OPPONENT_SCORE;
 terminal SELF_HISTORY, OPPONENT_HISTORY, RANDOM;
 terminal GET_MOVE, LAST_MOVE, GET_MOVES_COUNT, GET_LAST_N_MOVES;
 
-// Propiedades de Puntuación
 terminal DAMAGE_POINT, HEALING_POINT, SUCCESSFUL_DEFENSE, VICTORY_BONUS;
 terminal FAILED_ACTION_PENALTY, MAGE_COMBO, MAGE_COMBO_POINTS;
 terminal WARRIOR_COMBO, WARRIOR_COMBO_POINTS, LOW_HEALTH_VICTORY;
 
-// Operadores y Símbolos
 terminal EQEQ, NEQ, LTEQ, GTEQ, LT, GT;
 terminal AND, OR, NOT;
 terminal LBRACE, RBRACE, LBRACKET, RBRACKET, LPAREN, RPAREN;
 terminal COLON, COMMA;
 
-// --- DECLARACIÓN DE NO TERMINALES (Reglas de la Gramática) ---
-non terminal inicio;
-non terminal lista_instrucciones;
-non terminal instruccion;
+// ==========================================
+// 2. DECLARACIÓN DE NO TERMINALES
+// ==========================================
+non terminal inicio, lista_instrucciones, instruccion;
+non terminal estrategia, tipo_jugador, accion_inicial, bloque_reglas, lista_reglas, regla, regla_else, accion;
+non terminal condicion, operando, funcion_historial, historial, lista_acciones_secuencia;
+non terminal partida, parametros_scoring, parametros_bonuses;
+non terminal bloque_main, lista_run, instruccion_run, lista_id_partidas;
 
-// Piezas de la Estrategia
-non terminal estrategia;
-non terminal tipo_jugador;
-non terminal accion_inicial;
-non terminal bloque_reglas;
-non terminal lista_reglas;
-non terminal regla;
-non terminal regla_else;
-non terminal accion;
-non terminal condicion; // Esta la expandiremos con operadores lógicos más adelante
+// ==========================================
+// 3. PRECEDENCIA DE OPERADORES
+// ==========================================
+precedence left OR;
+precedence left AND;
+precedence left EQEQ, NEQ, LT, GT, LTEQ, GTEQ;
+precedence right NOT;
 
-// --- GRAMÁTICA ---
+// ==========================================
+// 4. GRAMÁTICA 
+// ==========================================
 start with inicio;
 
 inicio ::= lista_instrucciones
@@ -76,11 +71,12 @@ lista_instrucciones ::= lista_instrucciones instruccion
                       | instruccion
                       ;
 
-// Por ahora, el archivo puede contener estrategias (luego agregaremos partidas y main)
 instruccion ::= estrategia
+              | partida
+              | bloque_main
               ;
 
-// --- ESTRUCTURA DE LA ESTRATEGIA ---
+// --- ESTRATEGIAS ---
 estrategia ::= tipo_jugador ID LBRACE 
                   accion_inicial 
                   bloque_reglas 
@@ -95,7 +91,6 @@ accion_inicial ::= INITIAL COLON accion ;
 
 bloque_reglas ::= RULES COLON LBRACKET lista_reglas regla_else RBRACKET ;
 
-// La lista de reglas puede tener una o muchas reglas 'if'
 lista_reglas ::= lista_reglas regla
                | regla
                ;
@@ -104,12 +99,84 @@ regla ::= IF condicion THEN accion COMMA ;
 
 regla_else ::= ELSE accion ;
 
-// --- CATÁLOGO DE ACCIONES ---
 accion ::= ARCANE_BOLT | FIREBALL | MAGIC_BARRIER | HEALING_RUNE | MEDITATE
          | SLASH | HEAVY_STRIKE | SHIELD_BLOCK | WAR_CRY | REST
          ;
 
-// --- CONDICIÓN (Estructura Temporal) ---
-// Para que CUP no marque error, pondremos una condición de prueba falsa.
-// En el siguiente paso construiremos el árbol de precedencia (&&, ||, >, <)
-condicion ::= SELF_HEALTH LTEQ INTEGER ;
+// --- CONDICIONES Y EXPRESIONES ---
+condicion ::= condicion OR condicion
+            | condicion AND condicion
+            | NOT condicion
+            | LPAREN condicion RPAREN
+            | operando EQEQ operando
+            | operando NEQ operando
+            | operando LT operando
+            | operando GT operando
+            | operando LTEQ operando
+            | operando GTEQ operando
+            ;
+
+operando ::= INTEGER 
+           | FLOAT
+           | ROUND_NUMBER 
+           | TOTAL_ROUNDS 
+           | SELF_HEALTH 
+           | OPPONENT_HEALTH
+           | SELF_RESOURCE 
+           | OPPONENT_RESOURCE
+           | SELF_SCORE 
+           | OPPONENT_SCORE 
+           | RANDOM
+           | funcion_historial
+           | accion 
+           | LBRACKET lista_acciones_secuencia RBRACKET 
+           ;
+
+funcion_historial ::= GET_MOVE LPAREN historial COMMA INTEGER RPAREN
+                    | LAST_MOVE LPAREN historial RPAREN
+                    | GET_MOVES_COUNT LPAREN historial COMMA accion RPAREN
+                    | GET_MOVES_COUNT LPAREN funcion_historial COMMA accion RPAREN
+                    | GET_LAST_N_MOVES LPAREN historial COMMA INTEGER RPAREN
+                    ;
+
+historial ::= SELF_HISTORY | OPPONENT_HISTORY ;
+
+lista_acciones_secuencia ::= lista_acciones_secuencia COMMA accion
+                           | accion
+                           ;
+
+// --- PARTIDAS ---
+partida ::= MATCH ID LBRACE 
+              PLAYERS COLON LBRACKET ID COMMA ID RBRACKET
+              ROUNDS COLON INTEGER
+              SCORING COLON LBRACE parametros_scoring RBRACE
+              BONUSES COLON LBRACE parametros_bonuses RBRACE
+            RBRACE 
+          ;
+
+parametros_scoring ::= DAMAGE_POINT COLON INTEGER COMMA
+                       HEALING_POINT COLON INTEGER COMMA
+                       SUCCESSFUL_DEFENSE COLON INTEGER COMMA
+                       VICTORY_BONUS COLON INTEGER COMMA
+                       FAILED_ACTION_PENALTY COLON INTEGER 
+                     ;
+
+parametros_bonuses ::= MAGE_COMBO COLON LBRACKET lista_acciones_secuencia RBRACKET COMMA
+                       MAGE_COMBO_POINTS COLON INTEGER COMMA
+                       WARRIOR_COMBO COLON LBRACKET lista_acciones_secuencia RBRACKET COMMA
+                       WARRIOR_COMBO_POINTS COLON INTEGER COMMA
+                       LOW_HEALTH_VICTORY COLON INTEGER
+                     ;
+
+// --- MAIN ---
+bloque_main ::= MAIN LBRACE lista_run RBRACE ;
+
+lista_run ::= lista_run instruccion_run
+            | instruccion_run
+            ;
+
+instruccion_run ::= RUN LBRACKET lista_id_partidas RBRACKET WITH LBRACE SEED COLON INTEGER RBRACE ;
+
+lista_id_partidas ::= lista_id_partidas COMMA ID
+                    | ID
+                    ;
