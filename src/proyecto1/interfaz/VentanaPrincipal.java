@@ -17,7 +17,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 public class VentanaPrincipal extends JFrame {
 
     // Componentes principales
-    private JTextArea txtEntrada, txtSalida, txtReporte;
+    private JTextArea txtEntrada, txtSalida;
+    private JTable tablaReportes;
+    private javax.swing.table.DefaultTableModel modeloTabla;
     private JMenuItem menuNuevo, menuAbrir, menuGuardar, menuReportes, menuEjecutar;
 
     public VentanaPrincipal() {
@@ -26,6 +28,7 @@ public class VentanaPrincipal extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+        setResizable(false);
 
         inicializarComponentes();
     }
@@ -52,6 +55,7 @@ public class VentanaPrincipal extends JFrame {
 
         JMenu menuOpcionesEjecutar = new JMenu("Ejecutar");
         menuEjecutar = new JMenuItem("Analizar Código");
+        menuEjecutar.addActionListener(e -> ejecutarAnalisis());
         menuOpcionesEjecutar.add(menuEjecutar);
 
         barraMenu.add(menuArchivo);
@@ -61,18 +65,22 @@ public class VentanaPrincipal extends JFrame {
 
         // --- 2. ÁREAS DE TEXTO ---
         txtEntrada = new JTextArea();
-        txtReporte = new JTextArea();
         txtSalida = new JTextArea();
 
         // Paneles con Scroll
         JScrollPane scrollEntrada = new JScrollPane(txtEntrada);
         scrollEntrada.setBorder(BorderFactory.createTitledBorder("Entrada"));
-        
-        JScrollPane scrollReporte = new JScrollPane(txtReporte);
-        scrollReporte.setBorder(BorderFactory.createTitledBorder("Reporte"));
-        
+               
         JScrollPane scrollSalida = new JScrollPane(txtSalida);
         scrollSalida.setBorder(BorderFactory.createTitledBorder("Salida"));
+        
+        // --- CONFIGURACIÓN DE LA TABLA DE REPORTES ---
+        String[] columnas = {"#", "Lexema", "Tipo", "Línea", "Columna"};
+        modeloTabla = new javax.swing.table.DefaultTableModel(columnas, 0);
+        tablaReportes = new JTable(modeloTabla);
+        
+        JScrollPane scrollReporte = new JScrollPane(tablaReportes);
+        scrollReporte.setBorder(BorderFactory.createTitledBorder("Reporte de Tokens"));
 
         // --- 3. DISTRIBUCIÓN (Layout) ---
         JPanel panelSuperior = new JPanel(new GridLayout(1, 2, 10, 10));
@@ -88,7 +96,7 @@ public class VentanaPrincipal extends JFrame {
 
         add(panelPrincipal);
     }
-    
+    //BOTONES PARA ABRIR/GUARDAR/LIMPIAR
     private void abrirArchivo() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(new FileNameExtensionFilter("Archivos BattleScript (*.btl)", "btl"));
@@ -116,6 +124,53 @@ public class VentanaPrincipal extends JFrame {
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error al guardar el archivo", "Error", JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+    //BOTON PARA ANALIZAR CODIGO
+    private void ejecutarAnalisis() {
+        // Limpiamos áreas y tablas
+        txtSalida.setText("");
+        modeloTabla.setRowCount(0); // Limpia las filas de la tabla
+        String codigo = txtEntrada.getText();
+        
+        // Limpiamos el área de salida antes de cada nueva ejecución
+        txtSalida.setText("");
+        
+        if (codigo.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El área de entrada está vacía.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            txtSalida.append(" Iniciando análisis del código fuente...\n");
+            
+            // 1. Enviamos el texto al Analizador Léxico
+            java.io.StringReader reader = new java.io.StringReader(codigo);
+            proyecto1.analizadores.Lexer lexer = new proyecto1.analizadores.Lexer(reader);
+            
+            // 2. Pasamos los tokens al Analizador Sintáctico
+            proyecto1.analizadores.Parser parser = new proyecto1.analizadores.Parser(lexer);
+            
+            // 3. Ejecutamos el análisis
+            parser.parse();
+            // 4. Llenamos la tabla de Reporte de Tokens
+            int contador = 1;
+            for (proyecto1.analizadores.TokenInfo t : lexer.listaTokens) {
+                modeloTabla.addRow(new Object[]{
+                    contador, 
+                    t.lexema, 
+                    t.tipo, 
+                    t.linea, 
+                    t.columna
+                });
+                contador++;
+            }
+            txtSalida.append("\n ¡Análisis completado exitosamente!\n");
+            txtSalida.append("El código es sintácticamente correcto y cumple con la gramática de BattleScript.\n");
+            
+        } catch (Exception ex) {
+            txtSalida.append("\n OcurriÓ un error durante el análisis.\n");
+            txtSalida.append("Revisa la sintaxis de tu código o la consola para más detalles.\n");
         }
     }
 
