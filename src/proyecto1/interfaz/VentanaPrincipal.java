@@ -26,7 +26,7 @@ public class VentanaPrincipal extends JFrame {
 
     public VentanaPrincipal() {
         setTitle("BattleScript - IDE");
-        setSize(900, 700);
+        setSize(1300, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
@@ -36,7 +36,7 @@ public class VentanaPrincipal extends JFrame {
     }
 
     private void inicializarComponentes() {
-        // --- 1. BARRA DE MENÚ ---
+        // MENU BAR
         JMenuBar barraMenu = new JMenuBar();
 
         JMenu menuArchivo = new JMenu("Archivo");
@@ -50,47 +50,52 @@ public class VentanaPrincipal extends JFrame {
         menuArchivo.add(menuAbrir);
         menuArchivo.add(menuGuardar);
 
-        JMenu menuOpcionesReportes = new JMenu("Reportes");
-        menuReportes = new JMenuItem("Ver Reportes");
-        menuOpcionesReportes.add(menuReportes);
-
         JMenu menuOpcionesEjecutar = new JMenu("Ejecutar");
         menuEjecutar = new JMenuItem("Analizar Código");
         menuEjecutar.addActionListener(e -> ejecutarAnalisis());
         menuOpcionesEjecutar.add(menuEjecutar);
 
         barraMenu.add(menuArchivo);
-        barraMenu.add(menuOpcionesReportes);
         barraMenu.add(menuOpcionesEjecutar);
         setJMenuBar(barraMenu);
 
-        // --- 2. ÁREAS DE TEXTO ---
+        //AREAS DE TEXXTO
         txtEntrada = new JTextArea();
         txtSalida = new JTextArea();
 
-        // Paneles con Scroll
+        //LOS PANELES CON SCROLL
         JScrollPane scrollEntrada = new JScrollPane(txtEntrada);
         scrollEntrada.setBorder(BorderFactory.createTitledBorder("Entrada"));
 
         JScrollPane scrollSalida = new JScrollPane(txtSalida);
         scrollSalida.setBorder(BorderFactory.createTitledBorder("Salida"));
 
-        // --- CONFIGURACIÓN DE LA TABLA DE REPORTES ---
+        // CONFIGURACION DE TABLAS
         // Tabla de Tokens
         String[] columnasTokens = {"#", "Lexema", "Tipo", "Línea", "Columna"};
         modeloTokens = new javax.swing.table.DefaultTableModel(columnasTokens, 0);
         tablaTokens = new JTable(modeloTokens);
+        tablaTokens.getColumnModel().getColumn(0).setPreferredWidth(30);  // #
+        tablaTokens.getColumnModel().getColumn(1).setPreferredWidth(130); // Lexema
+        tablaTokens.getColumnModel().getColumn(2).setPreferredWidth(150); // Tipo
+        tablaTokens.getColumnModel().getColumn(3).setPreferredWidth(60);  // Línea
+        tablaTokens.getColumnModel().getColumn(4).setPreferredWidth(60);  // Columna
         // Tabla de Errores
         String[] columnasErrores = {"#", "Tipo", "Descripción", "Línea", "Columna"};
         modeloErrores = new javax.swing.table.DefaultTableModel(columnasErrores, 0);
         tablaErrores = new JTable(modeloErrores);
+        tablaErrores.getColumnModel().getColumn(0).setPreferredWidth(30);  // #
+        tablaErrores.getColumnModel().getColumn(1).setPreferredWidth(100); // Tipo
+        tablaErrores.getColumnModel().getColumn(2).setPreferredWidth(300); // Descripción (Más ancha)
+        tablaErrores.getColumnModel().getColumn(3).setPreferredWidth(60);  // Línea
+        tablaErrores.getColumnModel().getColumn(4).setPreferredWidth(60);  // Columna
         // Panel de Pestañas
         JTabbedPane panelReportes = new JTabbedPane();
         panelReportes.addTab("Tokens", new JScrollPane(tablaTokens));
         panelReportes.addTab("Errores", new JScrollPane(tablaErrores));
         panelReportes.setBorder(BorderFactory.createTitledBorder("Reportes del Sistema"));
 
-        // --- 3. DISTRIBUCIÓN (Layout) ---
+        //DISTRIBUCIÓN (Layout) ---
         JPanel panelSuperior = new JPanel(new GridLayout(1, 2, 10, 10));
         panelSuperior.add(scrollEntrada);
         panelSuperior.add(panelReportes);
@@ -153,7 +158,7 @@ public class VentanaPrincipal extends JFrame {
         }
 
        try {
-            txtSalida.append("🔥 Iniciando análisis del código fuente...\n");
+            txtSalida.append(" Iniciando análisis del código fuente...\n");
             
             // 1. Limpiamos las tablas
             modeloTokens.setRowCount(0);
@@ -172,13 +177,13 @@ public class VentanaPrincipal extends JFrame {
                 // No hacemos nada, simplemente evitamos que el programa salte al catch principal
             }
             
-            // 4. Llenamos la tabla de Tokens (¡Ahora este código SIEMPRE se ejecutará!)
+            // 4. llenar la tabla de Tokens (¡Ahora este código SIEMPRE se ejecutará!)
             int contTokens = 1;
             for (proyecto1.analizadores.TokenInfo t : lexer.listaTokens) {
                 modeloTokens.addRow(new Object[]{contTokens++, t.lexema, t.tipo, t.linea, t.columna});
             }
             
-            // 5. Llenamos la tabla de Errores
+            // 5. llenar la tabla de Errores
             int contErrores = 1;
             for (proyecto1.analizadores.ErrorInfo e : lexer.listaErrores) {
                 modeloErrores.addRow(new Object[]{contErrores++, e.tipo, e.descripcion, e.linea, e.columna});
@@ -187,25 +192,19 @@ public class VentanaPrincipal extends JFrame {
                 modeloErrores.addRow(new Object[]{contErrores++, e.tipo, e.descripcion, e.linea, e.columna});
             }
             
-            // 6. Veredicto Final en la consola de Salida
+            // 6. Registro Final en la consola de Salida
             if (lexer.listaErrores.isEmpty() && parser.listaErroresSintacticos.isEmpty()) {
-                txtSalida.append("\n✅ ¡Análisis completado exitosamente!\n");
+                txtSalida.append("\n ¡Análisis completado exitosamente!\n");
                 txtSalida.append("El código es sintácticamente correcto y no contiene errores.\n");
             } else {
-                txtSalida.append("\n⚠️ Se encontraron errores en el código.\n");
+                txtSalida.append("\nSe encontraron errores en el código.\n");
                 txtSalida.append("Se registraron " + (contErrores - 1) + " error(es).\n");
                 txtSalida.append("Revisa la pestaña de 'Errores' para corregirlos.\n");
             }
             
         } catch (Exception ex) {
-            txtSalida.append("\n❌ Ocurrió un error general en el sistema.\n");
+            txtSalida.append("\n Ocurrió un error general en el sistema.\n");
             ex.printStackTrace();
         }
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new VentanaPrincipal().setVisible(true);
-        });
     }
 }

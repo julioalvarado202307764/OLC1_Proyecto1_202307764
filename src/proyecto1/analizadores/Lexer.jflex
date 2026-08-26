@@ -9,10 +9,10 @@ import java_cup.runtime.Symbol;
 %column
 %cup
 %{
-    // Lista para almacenar los tokens reconocidos
+    //almacena tokens reconocidos
     public java.util.ArrayList<TokenInfo> listaTokens = new java.util.ArrayList<>();
     public java.util.ArrayList<ErrorInfo> listaErrores = new java.util.ArrayList<>();
-    // Método auxiliar para guardar en la lista y retornar el Symbol a CUP
+    //guarda en la lista y retorna symbol a cup
     private java_cup.runtime.Symbol token(int tipoSym, String nombreTipo, Object valor) {
         listaTokens.add(new TokenInfo(yytext(), nombreTipo, yyline + 1, yycolumn + 1));
         return new java_cup.runtime.Symbol(tipoSym, yyline + 1, yycolumn + 1, valor);
