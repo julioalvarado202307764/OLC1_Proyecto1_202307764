@@ -116,7 +116,7 @@ Identifier     = [a-zA-Z_] [a-zA-Z0-9_]*
   "low_health_victory"      { return token(sym.LOW_HEALTH_VICTORY, "Parámetro de Puntuación", yytext()); }
   
   
-  // Literales e Identificadores
+// Literales e Identificadores
   {IntegerLiteral} { return token(sym.INTEGER, "Entero", yytext()); }
   {FloatLiteral}   { return token(sym.FLOAT, "Decimal", yytext()); }
   {Identifier}     { return token(sym.ID, "Identificador", yytext()); }
@@ -128,16 +128,16 @@ Identifier     = [a-zA-Z_] [a-zA-Z0-9_]*
   "/*"             { yybegin(MULTILINE_COMMENT); }
 
   {WhiteSpace}     { /* Ignorar */ }
-}
 
+  //FALLBACK PARA ERRORES LÉXICOS
+  [^] { 
+      String desc = "El carácter '" + yytext() + "' no pertenece al lenguaje";
+      listaErrores.add(new ErrorInfo("Léxico", desc, yyline + 1, yycolumn + 1)); 
+  }
+} 
+
+// --- ESTADO PARA COMENTARIOS MULTILÍNEA ---
 <MULTILINE_COMMENT> {
   "*/"             { yybegin(YYINITIAL); }
-  [^]              {String desc = "El carácter '" + yytext() + "' no pertenece al lenguaje";
-                    listaErrores.add(new ErrorInfo("Léxico", desc, yyline + 1, yycolumn + 1)); }
-}
-
-// Fallback para Errores Léxicos
-[^]                { 
-    System.out.println("Error Léxico: " + yytext() + " en línea " + (yyline + 1)); 
-    // Aquí luego agregaremos la lógica para guardar el error en tu reporte visual
+  [^]              { /* Ignorar contenido, aquí no va el error */ }
 }

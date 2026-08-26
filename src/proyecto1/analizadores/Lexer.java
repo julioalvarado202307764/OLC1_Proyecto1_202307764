@@ -1146,8 +1146,8 @@ public class Lexer implements java_cup.runtime.Scanner {
       else {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
           case 1:
-            { System.out.println("Error Léxico: " + yytext() + " en línea " + (yyline + 1)); 
-    // Aquí luego agregaremos la lógica para guardar el error en tu reporte visual
+            { String desc = "El carácter '" + yytext() + "' no pertenece al lenguaje";
+      listaErrores.add(new ErrorInfo("Léxico", desc, yyline + 1, yycolumn + 1));
             }
           // fall through
           case 77: break;
@@ -1222,8 +1222,7 @@ public class Lexer implements java_cup.runtime.Scanner {
           // fall through
           case 91: break;
           case 16:
-            { String desc = "El carácter '" + yytext() + "' no pertenece al lenguaje";
-                    listaErrores.add(new ErrorInfo("Léxico", desc, yyline + 1, yycolumn + 1));
+            { /* Ignorar contenido, aquí no va el error */
             }
           // fall through
           case 92: break;

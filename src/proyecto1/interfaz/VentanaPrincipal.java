@@ -3,6 +3,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package proyecto1.interfaz;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedReader;
@@ -10,6 +11,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
 /**
  *
  * @author daish
@@ -18,8 +20,8 @@ public class VentanaPrincipal extends JFrame {
 
     // Componentes principales
     private JTextArea txtEntrada, txtSalida;
-    private JTable tablaReportes;
-    private javax.swing.table.DefaultTableModel modeloTabla;
+    private JTable tablaTokens, tablaErrores;
+    private javax.swing.table.DefaultTableModel modeloTokens, modeloErrores;
     private JMenuItem menuNuevo, menuAbrir, menuGuardar, menuReportes, menuEjecutar;
 
     public VentanaPrincipal() {
@@ -36,7 +38,7 @@ public class VentanaPrincipal extends JFrame {
     private void inicializarComponentes() {
         // --- 1. BARRA DE MENÚ ---
         JMenuBar barraMenu = new JMenuBar();
-        
+
         JMenu menuArchivo = new JMenu("Archivo");
         menuNuevo = new JMenuItem("Nuevo");
         menuAbrir = new JMenuItem("Abrir");
@@ -47,8 +49,7 @@ public class VentanaPrincipal extends JFrame {
         menuArchivo.add(menuNuevo);
         menuArchivo.add(menuAbrir);
         menuArchivo.add(menuGuardar);
-        
-        
+
         JMenu menuOpcionesReportes = new JMenu("Reportes");
         menuReportes = new JMenuItem("Ver Reportes");
         menuOpcionesReportes.add(menuReportes);
@@ -70,37 +71,45 @@ public class VentanaPrincipal extends JFrame {
         // Paneles con Scroll
         JScrollPane scrollEntrada = new JScrollPane(txtEntrada);
         scrollEntrada.setBorder(BorderFactory.createTitledBorder("Entrada"));
-               
+
         JScrollPane scrollSalida = new JScrollPane(txtSalida);
         scrollSalida.setBorder(BorderFactory.createTitledBorder("Salida"));
-        
+
         // --- CONFIGURACIÓN DE LA TABLA DE REPORTES ---
-        String[] columnas = {"#", "Lexema", "Tipo", "Línea", "Columna"};
-        modeloTabla = new javax.swing.table.DefaultTableModel(columnas, 0);
-        tablaReportes = new JTable(modeloTabla);
-        
-        JScrollPane scrollReporte = new JScrollPane(tablaReportes);
-        scrollReporte.setBorder(BorderFactory.createTitledBorder("Reporte de Tokens"));
+        // Tabla de Tokens
+        String[] columnasTokens = {"#", "Lexema", "Tipo", "Línea", "Columna"};
+        modeloTokens = new javax.swing.table.DefaultTableModel(columnasTokens, 0);
+        tablaTokens = new JTable(modeloTokens);
+        // Tabla de Errores
+        String[] columnasErrores = {"#", "Tipo", "Descripción", "Línea", "Columna"};
+        modeloErrores = new javax.swing.table.DefaultTableModel(columnasErrores, 0);
+        tablaErrores = new JTable(modeloErrores);
+        // Panel de Pestañas
+        JTabbedPane panelReportes = new JTabbedPane();
+        panelReportes.addTab("Tokens", new JScrollPane(tablaTokens));
+        panelReportes.addTab("Errores", new JScrollPane(tablaErrores));
+        panelReportes.setBorder(BorderFactory.createTitledBorder("Reportes del Sistema"));
 
         // --- 3. DISTRIBUCIÓN (Layout) ---
         JPanel panelSuperior = new JPanel(new GridLayout(1, 2, 10, 10));
         panelSuperior.add(scrollEntrada);
-        panelSuperior.add(scrollReporte);
+        panelSuperior.add(panelReportes);
 
         JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
         panelPrincipal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         panelPrincipal.add(panelSuperior, BorderLayout.CENTER);
-        
+
         scrollSalida.setPreferredSize(new Dimension(800, 200));
         panelPrincipal.add(scrollSalida, BorderLayout.SOUTH);
 
         add(panelPrincipal);
     }
+
     //BOTONES PARA ABRIR/GUARDAR/LIMPIAR
     private void abrirArchivo() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileFilter(new FileNameExtensionFilter("Archivos BattleScript (*.btl)", "btl"));
-        
+
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             try (BufferedReader br = new BufferedReader(new FileReader(chooser.getSelectedFile()))) {
                 txtEntrada.read(br, null);
@@ -118,7 +127,7 @@ public class VentanaPrincipal extends JFrame {
             if (!ruta.endsWith(".btl")) {
                 ruta += ".btl";
             }
-            
+
             try (FileWriter fw = new FileWriter(ruta)) {
                 txtEntrada.write(fw);
             } catch (Exception ex) {
@@ -126,51 +135,71 @@ public class VentanaPrincipal extends JFrame {
             }
         }
     }
+
     //BOTON PARA ANALIZAR CODIGO
     private void ejecutarAnalisis() {
         // Limpiamos áreas y tablas
         txtSalida.setText("");
-        modeloTabla.setRowCount(0); // Limpia las filas de la tabla
+        modeloTokens.setRowCount(0);
+        modeloErrores.setRowCount(0);// Limpia las filas de la tabla
         String codigo = txtEntrada.getText();
-        
+
         // Limpiamos el área de salida antes de cada nueva ejecución
         txtSalida.setText("");
-        
+
         if (codigo.trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "El área de entrada está vacía.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        try {
-            txtSalida.append(" Iniciando análisis del código fuente...\n");
+       try {
+            txtSalida.append("🔥 Iniciando análisis del código fuente...\n");
             
-            // 1. Enviamos el texto al Analizador Léxico
+            // 1. Limpiamos las tablas
+            modeloTokens.setRowCount(0);
+            modeloErrores.setRowCount(0);
+            
+            // 2. Preparamos los analizadores
             java.io.StringReader reader = new java.io.StringReader(codigo);
             proyecto1.analizadores.Lexer lexer = new proyecto1.analizadores.Lexer(reader);
-            
-            // 2. Pasamos los tokens al Analizador Sintáctico
             proyecto1.analizadores.Parser parser = new proyecto1.analizadores.Parser(lexer);
             
-            // 3. Ejecutamos el análisis
-            parser.parse();
-            // 4. Llenamos la tabla de Reporte de Tokens
-            int contador = 1;
-            for (proyecto1.analizadores.TokenInfo t : lexer.listaTokens) {
-                modeloTabla.addRow(new Object[]{
-                    contador, 
-                    t.lexema, 
-                    t.tipo, 
-                    t.linea, 
-                    t.columna
-                });
-                contador++;
+            // 3. AISLAMOS EL PARSER: Si entra en pánico, atrapamos el error aquí mismo
+            // para que el programa siga su camino y llene las tablas.
+            try {
+                parser.parse();
+            } catch (Exception fatalError) {
+                // No hacemos nada, simplemente evitamos que el programa salte al catch principal
             }
-            txtSalida.append("\n ¡Análisis completado exitosamente!\n");
-            txtSalida.append("El código es sintácticamente correcto y cumple con la gramática de BattleScript.\n");
+            
+            // 4. Llenamos la tabla de Tokens (¡Ahora este código SIEMPRE se ejecutará!)
+            int contTokens = 1;
+            for (proyecto1.analizadores.TokenInfo t : lexer.listaTokens) {
+                modeloTokens.addRow(new Object[]{contTokens++, t.lexema, t.tipo, t.linea, t.columna});
+            }
+            
+            // 5. Llenamos la tabla de Errores
+            int contErrores = 1;
+            for (proyecto1.analizadores.ErrorInfo e : lexer.listaErrores) {
+                modeloErrores.addRow(new Object[]{contErrores++, e.tipo, e.descripcion, e.linea, e.columna});
+            }
+            for (proyecto1.analizadores.ErrorInfo e : parser.listaErroresSintacticos) {
+                modeloErrores.addRow(new Object[]{contErrores++, e.tipo, e.descripcion, e.linea, e.columna});
+            }
+            
+            // 6. Veredicto Final en la consola de Salida
+            if (lexer.listaErrores.isEmpty() && parser.listaErroresSintacticos.isEmpty()) {
+                txtSalida.append("\n✅ ¡Análisis completado exitosamente!\n");
+                txtSalida.append("El código es sintácticamente correcto y no contiene errores.\n");
+            } else {
+                txtSalida.append("\n⚠️ Se encontraron errores en el código.\n");
+                txtSalida.append("Se registraron " + (contErrores - 1) + " error(es).\n");
+                txtSalida.append("Revisa la pestaña de 'Errores' para corregirlos.\n");
+            }
             
         } catch (Exception ex) {
-            txtSalida.append("\n OcurriÓ un error durante el análisis.\n");
-            txtSalida.append("Revisa la sintaxis de tu código o la consola para más detalles.\n");
+            txtSalida.append("\n❌ Ocurrió un error general en el sistema.\n");
+            ex.printStackTrace();
         }
     }
 
