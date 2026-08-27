@@ -113,36 +113,85 @@ public class MotorSimulacion {
         return est.accionElse;
     }
 
-    private void resolverInteraccion(Combatiente p1, Accion a1, Combatiente p2, Accion a2, Partida partida) {
-        // LÓGICA BASE: Aquí se aplican las reglas específicas del enunciado para daño, curación y puntuación.
-        // Ejemplo simplificado (Debes ajustarlo según las tablas de daño exactas del manual):
-        
-        boolean p1Ataca = esAtaque(a1);
-        boolean p2Ataca = esAtaque(a2);
-        
-        // Puntuación por ataque exitoso (si ataca y el otro no defiende adecuadamente)
-        if (p1Ataca) {
-            p2.salud -= 15; // Daño base hipotético
-            p1.puntuacion += partida.dmgPoint; 
+private void resolverInteraccion(Combatiente p1, Accion a1, Combatiente p2, Accion a2, Partida partida) {
+        // 1. Calculamos el daño crudo que cada uno lanza
+        int dmgA_P1 = calcularDaño(a2); // Daño que recibe P1
+        int dmgA_P2 = calcularDaño(a1); // Daño que recibe P2
+
+        // 2. Evaluamos Defensas (Reducen el daño a la mitad y otorgan puntos de defensa)
+        if (dmgA_P1 > 0 && (a1 == Accion.SHIELD_BLOCK || a1 == Accion.MAGIC_BARRIER)) {
+            dmgA_P1 /= 2;
+            p1.puntuacion += partida.defPoint;
+            bitacora.append("   🛡️ ").append(p1.nombre).append(" bloqueó parcialmente el ataque.\n");
         }
-        if (p2Ataca) {
-            p1.salud -= 15;
-            p2.puntuacion += partida.dmgPoint;
+        if (dmgA_P2 > 0 && (a2 == Accion.SHIELD_BLOCK || a2 == Accion.MAGIC_BARRIER)) {
+            dmgA_P2 /= 2;
+            p2.puntuacion += partida.defPoint;
+            bitacora.append("   🛡️ ").append(p2.nombre).append(" bloqueó parcialmente el ataque.\n");
         }
 
-        // Puntuación por curación
-        if (a1 == Accion.HEALING_RUNE || a1 == Accion.REST) {
-            p1.salud += 20;
-            p1.puntuacion += partida.healPoint;
+        // 3. Aplicamos el daño final y damos puntos por ataque exitoso
+        if (dmgA_P1 > 0) {
+            p1.salud -= dmgA_P1;
+            p2.puntuacion += partida.dmgPoint;
         }
-        if (a2 == Accion.HEALING_RUNE || a2 == Accion.REST) {
-            p2.salud += 20;
-            p2.puntuacion += partida.healPoint;
+        if (dmgA_P2 > 0) {
+            p2.salud -= dmgA_P2;
+            p1.puntuacion += partida.dmgPoint;
         }
+
+        // 4. Aplicamos Curaciones
+        aplicarCuracion(p1, a1, partida);
+        aplicarCuracion(p2, a2, partida);
+
+        // 5. Verificamos la ejecución de Combos
+        if (verificarCombo(p1, partida)) {
+            p1.puntuacion += (p1.tipo == TipoJugador.MAGE) ? partida.mageComboPoints : partida.warriorComboPoints;
+            bitacora.append("   🔥 ¡").append(p1.nombre).append(" conectó un COMBO brutal!\n");
+        }
+        if (verificarCombo(p2, partida)) {
+            p2.puntuacion += (p2.tipo == TipoJugador.MAGE) ? partida.mageComboPoints : partida.warriorComboPoints;
+            bitacora.append("   🔥 ¡").append(p2.nombre).append(" conectó un COMBO brutal!\n");
+        }
+    }
+
+    // --- MÉTODOS AUXILIARES ---
+
+    private int calcularDaño(Accion a) {
+        // NOTA: Ajusta estos valores numéricos si el manual oficial indica un daño exacto.
+        switch (a) {
+            case SLASH: return 10;
+            case ARCANE_BOLT: return 10;
+            case HEAVY_STRIKE: return 20;
+            case FIREBALL: return 20;
+            default: return 0; // Las curaciones o defensas no hacen daño
+        }
+    }
+
+    private void aplicarCuracion(Combatiente p, Accion a, Partida partida) {
+        if (a == Accion.HEALING_RUNE || a == Accion.REST) {
+            p.salud += 15; // Ajusta este valor si el manual especifica otra cantidad
+            if (p.salud > 100) p.salud = 100; // Tope máximo de vida
+            p.puntuacion += partida.healPoint;
+        }
+    }
+
+    private boolean verificarCombo(Combatiente p, Partida partida) {
+        List<Accion> comboRequerido = (p.tipo == TipoJugador.MAGE) ? partida.mageCombo : partida.warriorCombo;
         
-        // Prevención de vida infinita
-        if(p1.salud > 100) p1.salud = 100;
-        if(p2.salud > 100) p2.salud = 100;
+        // Si no hay combo definido o el historial es muy corto, ignoramos
+        if (comboRequerido == null || comboRequerido.isEmpty() || p.historial.size() < comboRequerido.size()) {
+            return false;
+        }
+
+        // Revisamos si los últimos movimientos coinciden con la secuencia del combo
+        int inicio = p.historial.size() - comboRequerido.size();
+        for (int i = 0; i < comboRequerido.size(); i++) {
+            if (p.historial.get(inicio + i) != comboRequerido.get(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void aplicarBonificacionesFinales(Combatiente p1, Combatiente p2, Partida partida) {
@@ -155,9 +204,6 @@ public class MotorSimulacion {
         if (p2.salud > 0 && p2.salud <= 20 && p2.salud > p1.salud) p2.puntuacion += partida.lowHealthVictory;
     }
 
-    private boolean esAtaque(Accion a) {
-        return a == Accion.ARCANE_BOLT || a == Accion.FIREBALL || a == Accion.SLASH || a == Accion.HEAVY_STRIKE;
-    }
 
     private Partida buscarPartida(String id) {
         return partidasAST.stream().filter(p -> p.id.equals(id)).findFirst().orElse(null);

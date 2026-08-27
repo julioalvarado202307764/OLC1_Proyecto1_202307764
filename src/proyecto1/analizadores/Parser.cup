@@ -64,6 +64,8 @@ non terminal List<Accion> lista_acciones_secuencia;
 non terminal List<String> lista_id_partidas;
 non terminal Estrategia estrategia;
 non terminal Partida partida;
+non terminal FuncionHistorial.Target historial;
+non terminal FuncionHistorial funcion_historial;
 
 // ==========================================
 // 3. PRECEDENCIA
@@ -146,8 +148,21 @@ operando ::= INTEGER:v {: RESULT = new Literal(Integer.parseInt(v)); :}
            | OPPONENT_SCORE {: RESULT = new Variable(Variable.TipoVar.OPPONENT_SCORE); :}
            | RANDOM {: RESULT = new Variable(Variable.TipoVar.RANDOM); :}
            | accion:a {: RESULT = new Literal(a); :}
+           | funcion_historial:f {: RESULT = f;:}
            ;
+historial ::= SELF_HISTORY {: RESULT = FuncionHistorial.Target.SELF; :}
+            | OPPONENT_HISTORY {: RESULT = FuncionHistorial.Target.OPPONENT; :}
+            ;
 
+funcion_historial ::= GET_MOVE LPAREN historial:h COMMA operando:n RPAREN 
+                      {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.GET_MOVE, h, n); :}
+                    | LAST_MOVE LPAREN historial:h RPAREN 
+                      {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.LAST_MOVE, h); :}
+                    | GET_MOVES_COUNT LPAREN historial:h COMMA accion:a RPAREN 
+                      {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.GET_MOVES_COUNT, h, a); :}
+                    | GET_LAST_N_MOVES LPAREN historial:h COMMA operando:n RPAREN 
+                      {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.GET_LAST_N_MOVES, h, n); :}
+                    ;
 // --- PARTIDAS (Aplanadas para instanciación directa) ---
 partida ::= MATCH ID:id LBRACE 
               PLAYERS COLON LBRACKET ID:p1 COMMA ID:p2 RBRACKET
