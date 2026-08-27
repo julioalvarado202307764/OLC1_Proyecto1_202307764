@@ -157,18 +157,18 @@ public class VentanaPrincipal extends JFrame {
             return;
         }
 
-       try {
+        try {
             txtSalida.append(" Iniciando análisis del código fuente...\n");
-            
+
             // 1. Limpiamos las tablas
             modeloTokens.setRowCount(0);
             modeloErrores.setRowCount(0);
-            
+
             // 2. Preparamos los analizadores
             java.io.StringReader reader = new java.io.StringReader(codigo);
             proyecto1.analizadores.Lexer lexer = new proyecto1.analizadores.Lexer(reader);
             proyecto1.analizadores.Parser parser = new proyecto1.analizadores.Parser(lexer);
-            
+
             // 3. AISLAMOS EL PARSER: Si entra en pánico, atrapamos el error aquí mismo
             // para que el programa siga su camino y llene las tablas.
             try {
@@ -176,13 +176,13 @@ public class VentanaPrincipal extends JFrame {
             } catch (Exception fatalError) {
                 // No hacemos nada, simplemente evitamos que el programa salte al catch principal
             }
-            
+
             // 4. llenar la tabla de Tokens (¡Ahora este código SIEMPRE se ejecutará!)
             int contTokens = 1;
             for (proyecto1.analizadores.TokenInfo t : lexer.listaTokens) {
                 modeloTokens.addRow(new Object[]{contTokens++, t.lexema, t.tipo, t.linea, t.columna});
             }
-            
+
             // 5. llenar la tabla de Errores
             int contErrores = 1;
             for (proyecto1.analizadores.ErrorInfo e : lexer.listaErrores) {
@@ -191,17 +191,31 @@ public class VentanaPrincipal extends JFrame {
             for (proyecto1.analizadores.ErrorInfo e : parser.listaErroresSintacticos) {
                 modeloErrores.addRow(new Object[]{contErrores++, e.tipo, e.descripcion, e.linea, e.columna});
             }
-            
-            // 6. Registro Final en la consola de Salida
+
+            // 6. Veredicto Final e Inicio de la Simulación
             if (lexer.listaErrores.isEmpty() && parser.listaErroresSintacticos.isEmpty()) {
                 txtSalida.append("\n ¡Análisis completado exitosamente!\n");
                 txtSalida.append("El código es sintácticamente correcto y no contiene errores.\n");
+
+                // --- EJECUCIÓN DEL MOTOR DE SIMULACIÓN ---
+                txtSalida.append("\n Preparando Motor de Simulación...\n");
+
+                proyecto1.ast.MotorSimulacion motor = new proyecto1.ast.MotorSimulacion(
+                        parser.estrategiasAST,
+                        parser.partidasAST,
+                        parser.partidasAEjecutar,
+                        parser.semillaSimulacion
+                );
+
+                String reporteBatalla = motor.ejecutarSimulacion();
+                txtSalida.append(reporteBatalla);
+
             } else {
-                txtSalida.append("\nSe encontraron errores en el código.\n");
+                txtSalida.append("\n Se encontraron errores en el código.\n");
                 txtSalida.append("Se registraron " + (contErrores - 1) + " error(es).\n");
-                txtSalida.append("Revisa la pestaña de 'Errores' para corregirlos.\n");
+                txtSalida.append("Revisa la pestaña de 'Errores' para corregirlos antes de simular.\n");
             }
-            
+
         } catch (Exception ex) {
             txtSalida.append("\n Ocurrió un error general en el sistema.\n");
             ex.printStackTrace();

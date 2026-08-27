@@ -712,10 +712,13 @@ public class Lexer implements java_cup.runtime.Scanner {
   private boolean zzEOFDone;
 
   /* user code: */
-    // Lista para almacenar los tokens reconocidos
+    //almacena tokens reconocidos
     public java.util.ArrayList<TokenInfo> listaTokens = new java.util.ArrayList<>();
     public java.util.ArrayList<ErrorInfo> listaErrores = new java.util.ArrayList<>();
-    // Método auxiliar para guardar en la lista y retornar el Symbol a CUP
+
+     // Guarda la posición donde inició el comentario multilínea actual
+    private int comentarioLinea, comentarioColumna;
+    //guarda en la lista y retorna symbol a cup
     private java_cup.runtime.Symbol token(int tipoSym, String nombreTipo, Object valor) {
         listaTokens.add(new TokenInfo(yytext(), nombreTipo, yyline + 1, yycolumn + 1));
         return new java_cup.runtime.Symbol(tipoSym, yyline + 1, yycolumn + 1, valor);
@@ -1141,7 +1144,20 @@ public class Lexer implements java_cup.runtime.Scanner {
       if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
         zzAtEOF = true;
             zzDoEOF();
+            switch (zzLexicalState) {
+            case MULTILINE_COMMENT: {
+              listaErrores.add(new ErrorInfo(
+          "Léxico",
+          "Comentario multilínea sin cerrar (iniciado en línea " + comentarioLinea + ", columna " + comentarioColumna + ")",
+          comentarioLinea,
+          comentarioColumna
+      ));
+      throw new RuntimeException("Error léxico fatal: comentario multilínea sin cerrar.");
+            }  // fall though
+            case 433: break;
+            default:
           { return new java_cup.runtime.Symbol(sym.EOF); }
+        }
       }
       else {
         switch (zzAction < 0 ? zzAction : ZZ_ACTION[zzAction]) {
@@ -1237,7 +1253,7 @@ public class Lexer implements java_cup.runtime.Scanner {
           // fall through
           case 94: break;
           case 19:
-            { yybegin(MULTILINE_COMMENT);
+            { comentarioLinea = yyline + 1; comentarioColumna = yycolumn + 1; yybegin(MULTILINE_COMMENT);
             }
           // fall through
           case 95: break;

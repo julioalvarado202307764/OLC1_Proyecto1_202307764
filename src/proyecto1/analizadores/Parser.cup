@@ -1,31 +1,34 @@
 package proyecto1.analizadores;
 
 import java_cup.runtime.*;
+import java.util.ArrayList;
+import java.util.List;
+import proyecto1.ast.*;
 
 parser code {:
-    // Lista para guardar los errores sintácticos
+    //GUARDAR OBJETOS VIVOS 
+    public ArrayList<Estrategia> estrategiasAST = new ArrayList<>();
+    public ArrayList<Partida> partidasAST = new ArrayList<>();
+    public ArrayList<String> partidasAEjecutar = new ArrayList<>();
+    public int semillaSimulacion = 0;
+
     public java.util.ArrayList<ErrorInfo> listaErroresSintacticos = new java.util.ArrayList<>();
 
     public void syntax_error(Symbol s) {
         String lexema = (s.value != null) ? s.value.toString() : "Fin de archivo";
-        String desc = "No se esperaba el componente: " + lexema;
-        // En CUP, s.left y s.right guardan la línea y columna respectivamente
-        listaErroresSintacticos.add(new ErrorInfo("Sintáctico", desc, s.left, s.right));
+        listaErroresSintacticos.add(new ErrorInfo("Sintáctico", "No se esperaba: " + lexema, s.left, s.right));
     }
 
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
         String lexema = (s.value != null) ? s.value.toString() : "Fin de archivo";
-        String desc = "Error irrecuperable cerca de: " + lexema;
-        listaErroresSintacticos.add(new ErrorInfo("Sintáctico", desc, s.left, s.right));
+        listaErroresSintacticos.add(new ErrorInfo("Sintáctico", "Error fatal cerca de: " + lexema, s.left, s.right));
     }
 :}
 
 // ==========================================
-// 1. DECLARACIÓN DE TERMINALES
+// 1. TERMINALES (¡Atención a String!)
 // ==========================================
-terminal String ID;
-terminal Integer INTEGER;
-terminal Double FLOAT;
+terminal String ID, INTEGER, FLOAT;
 
 terminal MAGE, WARRIOR, IF, THEN, ELSE;
 terminal MATCH, PLAYERS, ROUNDS, SCORING, BONUSES;
@@ -45,20 +48,25 @@ terminal WARRIOR_COMBO, WARRIOR_COMBO_POINTS, LOW_HEALTH_VICTORY;
 
 terminal EQEQ, NEQ, LTEQ, GTEQ, LT, GT;
 terminal AND, OR, NOT;
-terminal LBRACE, RBRACE, LBRACKET, RBRACKET, LPAREN, RPAREN;
-terminal COLON, COMMA;
+terminal LBRACE, RBRACE, LBRACKET, RBRACKET, LPAREN, RPAREN, COLON, COMMA;
 
 // ==========================================
-// 2. DECLARACIÓN DE NO TERMINALES
+// 2. NO TERMINALES TIPADOS (AST)
 // ==========================================
-non terminal inicio, lista_instrucciones, instruccion;
-non terminal estrategia, tipo_jugador, accion_inicial, bloque_reglas, lista_reglas, regla, regla_else, accion;
-non terminal condicion, operando, funcion_historial, historial, lista_acciones_secuencia;
-non terminal partida, parametros_scoring, parametros_bonuses;
-non terminal bloque_main, lista_run, instruccion_run, lista_id_partidas;
+non terminal inicio, lista_instrucciones, instruccion, bloque_main, lista_run, instruccion_run;
+non terminal TipoJugador tipo_jugador;
+non terminal Accion accion, accion_inicial, regla_else;
+non terminal Regla regla;
+non terminal List<Regla> lista_reglas;
+non terminal Condicion condicion;
+non terminal Expresion operando;
+non terminal List<Accion> lista_acciones_secuencia;
+non terminal List<String> lista_id_partidas;
+non terminal Estrategia estrategia;
+non terminal Partida partida;
 
 // ==========================================
-// 3. PRECEDENCIA DE OPERADORES
+// 3. PRECEDENCIA
 // ==========================================
 precedence left OR;
 precedence left AND;
@@ -66,123 +74,119 @@ precedence left EQEQ, NEQ, LT, GT, LTEQ, GTEQ;
 precedence right NOT;
 
 // ==========================================
-// 4. GRAMÁTICA 
+// 4. GRAMÁTICA Y ACCIONES SEMÁNTICAS
 // ==========================================
 start with inicio;
 
-inicio ::= lista_instrucciones
-         ;
+inicio ::= lista_instrucciones ;
+lista_instrucciones ::= lista_instrucciones instruccion | instruccion ;
+instruccion ::= estrategia | partida | bloque_main ;
 
-lista_instrucciones ::= lista_instrucciones instruccion
-                      | instruccion
-                      ;
-
-instruccion ::= estrategia
-              | partida
-              | bloque_main
-              ;
-
-// --- ESTRATEGIAS ---
-estrategia ::= tipo_jugador ID LBRACE 
-                  accion_inicial 
-                  bloque_reglas 
+// --- ESTRATEGIAS (Construcción Directa) ---
+estrategia ::= tipo_jugador:t ID:id LBRACE 
+                  INITIAL COLON accion:ai 
+                  RULES COLON LBRACKET lista_reglas:lr regla_else:re RBRACKET 
                RBRACE
+               {: 
+                  Estrategia e = new Estrategia(id, t, ai, lr, re);
+                  estrategiasAST.add(e); // Guardamos la estrategia viva
+               :}
              ;
 
-tipo_jugador ::= MAGE 
-               | WARRIOR 
+tipo_jugador ::= MAGE {: RESULT = TipoJugador.MAGE; :}
+               | WARRIOR {: RESULT = TipoJugador.WARRIOR; :}
                ;
 
-accion_inicial ::= INITIAL COLON accion ;
-
-bloque_reglas ::= RULES COLON LBRACKET lista_reglas regla_else RBRACKET ;
-
-lista_reglas ::= lista_reglas regla
-               | regla
+lista_reglas ::= lista_reglas:l regla:r {: l.add(r); RESULT = l; :}
+               | regla:r {: List<Regla> l = new ArrayList<>(); l.add(r); RESULT = l; :}
                ;
 
-regla ::= IF condicion THEN accion COMMA ;
+regla ::= IF condicion:c THEN accion:a COMMA {: RESULT = new Regla(c, a); :} ;
+regla_else ::= ELSE accion:a {: RESULT = a; :} ;
 
-regla_else ::= ELSE accion ;
-
-accion ::= ARCANE_BOLT | FIREBALL | MAGIC_BARRIER | HEALING_RUNE | MEDITATE
-         | SLASH | HEAVY_STRIKE | SHIELD_BLOCK | WAR_CRY | REST
+// --- ACCIONES ---
+accion ::= ARCANE_BOLT {: RESULT = Accion.ARCANE_BOLT; :}
+         | FIREBALL {: RESULT = Accion.FIREBALL; :}
+         | MAGIC_BARRIER {: RESULT = Accion.MAGIC_BARRIER; :}
+         | HEALING_RUNE {: RESULT = Accion.HEALING_RUNE; :}
+         | MEDITATE {: RESULT = Accion.MEDITATE; :}
+         | SLASH {: RESULT = Accion.SLASH; :}
+         | HEAVY_STRIKE {: RESULT = Accion.HEAVY_STRIKE; :}
+         | SHIELD_BLOCK {: RESULT = Accion.SHIELD_BLOCK; :}
+         | WAR_CRY {: RESULT = Accion.WAR_CRY; :}
+         | REST {: RESULT = Accion.REST; :}
          ;
 
-// --- CONDICIONES Y EXPRESIONES ---
-condicion ::= condicion OR condicion
-            | condicion AND condicion
-            | NOT condicion
-            | LPAREN condicion RPAREN
-            | operando EQEQ operando
-            | operando NEQ operando
-            | operando LT operando
-            | operando GT operando
-            | operando LTEQ operando
-            | operando GTEQ operando
-            ;
-
-operando ::= INTEGER 
-           | FLOAT
-           | ROUND_NUMBER 
-           | TOTAL_ROUNDS 
-           | SELF_HEALTH 
-           | OPPONENT_HEALTH
-           | SELF_RESOURCE 
-           | OPPONENT_RESOURCE
-           | SELF_SCORE 
-           | OPPONENT_SCORE 
-           | RANDOM
-           | funcion_historial
-           | accion 
-           | LBRACKET lista_acciones_secuencia RBRACKET 
-           ;
-
-funcion_historial ::= GET_MOVE LPAREN historial COMMA INTEGER RPAREN
-                    | LAST_MOVE LPAREN historial RPAREN
-                    | GET_MOVES_COUNT LPAREN historial COMMA accion RPAREN
-                    | GET_MOVES_COUNT LPAREN funcion_historial COMMA accion RPAREN
-                    | GET_LAST_N_MOVES LPAREN historial COMMA INTEGER RPAREN
-                    ;
-
-historial ::= SELF_HISTORY | OPPONENT_HISTORY ;
-
-lista_acciones_secuencia ::= lista_acciones_secuencia COMMA accion
-                           | accion
+lista_acciones_secuencia ::= lista_acciones_secuencia:l COMMA accion:a {: l.add(a); RESULT = l; :}
+                           | accion:a {: List<Accion> l = new ArrayList<>(); l.add(a); RESULT = l; :}
                            ;
 
-// --- PARTIDAS ---
-partida ::= MATCH ID LBRACE 
-              PLAYERS COLON LBRACKET ID COMMA ID RBRACKET
-              ROUNDS COLON INTEGER
-              SCORING COLON LBRACE parametros_scoring RBRACE
-              BONUSES COLON LBRACE parametros_bonuses RBRACE
-            RBRACE 
-          ;
-
-parametros_scoring ::= DAMAGE_POINT COLON INTEGER COMMA
-                       HEALING_POINT COLON INTEGER COMMA
-                       SUCCESSFUL_DEFENSE COLON INTEGER COMMA
-                       VICTORY_BONUS COLON INTEGER COMMA
-                       FAILED_ACTION_PENALTY COLON INTEGER 
-                     ;
-
-parametros_bonuses ::= MAGE_COMBO COLON LBRACKET lista_acciones_secuencia RBRACKET COMMA
-                       MAGE_COMBO_POINTS COLON INTEGER COMMA
-                       WARRIOR_COMBO COLON LBRACKET lista_acciones_secuencia RBRACKET COMMA
-                       WARRIOR_COMBO_POINTS COLON INTEGER COMMA
-                       LOW_HEALTH_VICTORY COLON INTEGER
-                     ;
-
-// --- MAIN ---
-bloque_main ::= MAIN LBRACE lista_run RBRACE ;
-
-lista_run ::= lista_run instruccion_run
-            | instruccion_run
+// --- CONDICIONES Y OPERADORES ---
+condicion ::= condicion:i OR condicion:d  {: RESULT = new OperacionLogica(i, "OR", d); :}
+            | condicion:i AND condicion:d {: RESULT = new OperacionLogica(i, "AND", d); :}
+            | NOT condicion:c             {: RESULT = new OperacionLogica(c, "NOT"); :}
+            | LPAREN condicion:c RPAREN   {: RESULT = c; :}
+            | operando:i EQEQ operando:d  {: RESULT = new OperacionRelacional(i, "==", d); :}
+            | operando:i NEQ operando:d   {: RESULT = new OperacionRelacional(i, "!=", d); :}
+            | operando:i LT operando:d    {: RESULT = new OperacionRelacional(i, "<", d); :}
+            | operando:i GT operando:d    {: RESULT = new OperacionRelacional(i, ">", d); :}
+            | operando:i LTEQ operando:d  {: RESULT = new OperacionRelacional(i, "<=", d); :}
+            | operando:i GTEQ operando:d  {: RESULT = new OperacionRelacional(i, ">=", d); :}
             ;
 
-instruccion_run ::= RUN LBRACKET lista_id_partidas RBRACKET WITH LBRACE SEED COLON INTEGER RBRACE ;
+operando ::= INTEGER:v {: RESULT = new Literal(Integer.parseInt(v)); :}
+           | FLOAT:v {: RESULT = new Literal(Double.parseDouble(v)); :}
+           | ROUND_NUMBER {: RESULT = new Variable(Variable.TipoVar.ROUND_NUMBER); :}
+           | TOTAL_ROUNDS {: RESULT = new Variable(Variable.TipoVar.TOTAL_ROUNDS); :}
+           | SELF_HEALTH {: RESULT = new Variable(Variable.TipoVar.SELF_HEALTH); :}
+           | OPPONENT_HEALTH {: RESULT = new Variable(Variable.TipoVar.OPPONENT_HEALTH); :}
+           | SELF_RESOURCE {: RESULT = new Variable(Variable.TipoVar.SELF_RESOURCE); :}
+           | OPPONENT_RESOURCE {: RESULT = new Variable(Variable.TipoVar.OPPONENT_RESOURCE); :}
+           | SELF_SCORE {: RESULT = new Variable(Variable.TipoVar.SELF_SCORE); :}
+           | OPPONENT_SCORE {: RESULT = new Variable(Variable.TipoVar.OPPONENT_SCORE); :}
+           | RANDOM {: RESULT = new Variable(Variable.TipoVar.RANDOM); :}
+           | accion:a {: RESULT = new Literal(a); :}
+           ;
 
-lista_id_partidas ::= lista_id_partidas COMMA ID
-                    | ID
+// --- PARTIDAS (Aplanadas para instanciación directa) ---
+partida ::= MATCH ID:id LBRACE 
+              PLAYERS COLON LBRACKET ID:p1 COMMA ID:p2 RBRACKET
+              ROUNDS COLON INTEGER:r
+              SCORING COLON LBRACE 
+                 DAMAGE_POINT COLON INTEGER:dp COMMA
+                 HEALING_POINT COLON INTEGER:hp COMMA
+                 SUCCESSFUL_DEFENSE COLON INTEGER:def COMMA
+                 VICTORY_BONUS COLON INTEGER:vb COMMA
+                 FAILED_ACTION_PENALTY COLON INTEGER:pen
+              RBRACE
+              BONUSES COLON LBRACE
+                 MAGE_COMBO COLON LBRACKET lista_acciones_secuencia:mc RBRACKET COMMA
+                 MAGE_COMBO_POINTS COLON INTEGER:mp COMMA
+                 WARRIOR_COMBO COLON LBRACKET lista_acciones_secuencia:wc RBRACKET COMMA
+                 WARRIOR_COMBO_POINTS COLON INTEGER:wp COMMA
+                 LOW_HEALTH_VICTORY COLON INTEGER:lhv
+              RBRACE
+            RBRACE 
+            {: 
+               Partida p = new Partida(id, p1, p2, Integer.parseInt(r),
+                           Integer.parseInt(dp), Integer.parseInt(hp), Integer.parseInt(def),
+                           Integer.parseInt(vb), Integer.parseInt(pen),
+                           mc, Integer.parseInt(mp), wc, Integer.parseInt(wp), Integer.parseInt(lhv));
+               partidasAST.add(p);
+            :}
+          ;
+
+// --- MAIN (Ejecución) ---
+bloque_main ::= MAIN LBRACE lista_run RBRACE ;
+lista_run ::= lista_run instruccion_run | instruccion_run ;
+
+instruccion_run ::= RUN LBRACKET lista_id_partidas:lista RBRACKET WITH LBRACE SEED COLON INTEGER:s RBRACE 
+                    {: 
+                       partidasAEjecutar.addAll(lista);
+                       semillaSimulacion = Integer.parseInt(s); 
+                    :}
+                  ;
+
+lista_id_partidas ::= lista_id_partidas:l COMMA ID:id {: l.add(id); RESULT = l; :}
+                    | ID:id {: List<String> l = new ArrayList<>(); l.add(id); RESULT = l; :}
                     ;
