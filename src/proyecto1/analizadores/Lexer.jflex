@@ -12,6 +12,9 @@ import java_cup.runtime.Symbol;
     //almacena tokens reconocidos
     public java.util.ArrayList<TokenInfo> listaTokens = new java.util.ArrayList<>();
     public java.util.ArrayList<ErrorInfo> listaErrores = new java.util.ArrayList<>();
+
+     // Guarda la posición donde inició el comentario multilínea actual
+    private int comentarioLinea, comentarioColumna;
     //guarda en la lista y retorna symbol a cup
     private java_cup.runtime.Symbol token(int tipoSym, String nombreTipo, Object valor) {
         listaTokens.add(new TokenInfo(yytext(), nombreTipo, yyline + 1, yycolumn + 1));
@@ -125,7 +128,7 @@ Identifier     = [a-zA-Z_] [a-zA-Z0-9_]*
   "//" {InputCharacter}* { /* Ignorar */ }
 
   // Inicio de comentario multilínea
-  "/*"             { yybegin(MULTILINE_COMMENT); }
+  "/*"             { comentarioLinea = yyline + 1; comentarioColumna = yycolumn + 1; yybegin(MULTILINE_COMMENT); }
 
   {WhiteSpace}     { /* Ignorar */ }
 
@@ -140,4 +143,14 @@ Identifier     = [a-zA-Z_] [a-zA-Z0-9_]*
 <MULTILINE_COMMENT> {
   "*/"             { yybegin(YYINITIAL); }
   [^]              { /* Ignorar contenido, aquí no va el error */ }
+
+  <<EOF>>          {
+      listaErrores.add(new ErrorInfo(
+          "Léxico",
+          "Comentario multilínea sin cerrar (iniciado en línea " + comentarioLinea + ", columna " + comentarioColumna + ")",
+          comentarioLinea,
+          comentarioColumna
+      ));
+      throw new RuntimeException("Error léxico fatal: comentario multilínea sin cerrar.");
+  }
 }
