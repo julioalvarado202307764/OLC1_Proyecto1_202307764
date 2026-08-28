@@ -65,6 +65,8 @@ public class MotorSimulacion {
         Random randP1 = new Random(this.semilla);
         Random randP2 = new Random(this.semilla + 1);
 
+        boolean terminoPorMuerte = false;
+
         for (int ronda = 1; ronda <= partida.rounds; ronda++) {
             // Generamos EXACTAMENTE UN VALOR aleatorio (0-100) por jugador en esta ronda            
             int randomP1 = randP1.nextInt(101);
@@ -88,22 +90,25 @@ public class MotorSimulacion {
 
             // Si alguno muere antes de llegar al límite de rondas, termina la partida
             if (p1.salud <= 0 || p2.salud <= 0) {
+                terminoPorMuerte = true;
                 break;
             }
         }
 
         // 5. Asignar Bonificaciones Finales (Combos y Low Health)
-        aplicarBonificacionesFinales(p1, p2, partida);
+        Combatiente ganador = determinarGanadorYAplicarBonos(p1, p2, partida, terminoPorMuerte);
 
-        // 6. Declarar Ganador
+        // 6. Reportar resultado
         bitacora.append("\n--- RESULTADO FINAL ---\n");
-        bitacora.append(p1.nombre).append(" -> Vida: ").append(p1.salud).append(" | Puntos: ").append(p1.puntuacion).append("\n");
-        bitacora.append(p2.nombre).append(" -> Vida: ").append(p2.salud).append(" | Puntos: ").append(p2.puntuacion).append("\n");
+        bitacora.append(p1.nombre).append(" -> Vida: ").append(p1.salud)
+                .append(" | Recurso: ").append(p1.recurso)
+                .append(" | Puntos: ").append(p1.puntuacion).append("\n");
+        bitacora.append(p2.nombre).append(" -> Vida: ").append(p2.salud)
+                .append(" | Recurso: ").append(p2.recurso)
+                .append(" | Puntos: ").append(p2.puntuacion).append("\n");
 
-        if (p1.puntuacion > p2.puntuacion) {
-            bitacora.append("👑 GANADOR: ").append(p1.nombre).append("!\n\n");
-        } else if (p2.puntuacion > p1.puntuacion) {
-            bitacora.append("👑 GANADOR: ").append(p2.nombre).append("!\n\n");
+        if (ganador != null) {
+            bitacora.append("👑 GANADOR: ").append(ganador.nombre).append("!\n\n");
         } else {
             bitacora.append("🤝 EMPATE TÉCNICO!\n\n");
         }
@@ -356,19 +361,42 @@ public class MotorSimulacion {
         bitacora.append("   🔥 ¡").append(p.nombre).append(" conectó su COMBO!\n");
     }
 
-    private void aplicarBonificacionesFinales(Combatiente p1, Combatiente p2, Partida partida) {
-        if (p1.salud > p2.salud) {
-            p1.puntuacion += partida.victoryBonus;
-        } else if (p2.salud > p1.salud) {
-            p2.puntuacion += partida.victoryBonus;
+    private Combatiente determinarGanadorYAplicarBonos(Combatiente p1, Combatiente p2, Partida partida, boolean terminoPorMuerte) {
+        Combatiente ganador;
+
+        if (terminoPorMuerte) {
+            // Derrota directa (PDF 7.5): gana quien sobrevive, sin importar el puntaje.
+            if (p1.salud <= 0 && p2.salud > 0) {
+                ganador = p2;
+            } else if (p2.salud <= 0 && p1.salud > 0) {
+                ganador = p1;
+            } else {
+                ganador = null; // caso extremo: doble KO el mismo turno -> empate
+            }
+        } else {
+            // Límite de rondas con ambos vivos (PDF 7.5): puntaje -> vida -> recurso -> empate.
+            if (p1.puntuacion != p2.puntuacion) {
+                ganador = (p1.puntuacion > p2.puntuacion) ? p1 : p2;
+            } else if (p1.salud != p2.salud) {
+                ganador = (p1.salud > p2.salud) ? p1 : p2;
+            } else if (p1.recurso != p2.recurso) {
+                ganador = (p1.recurso > p2.recurso) ? p1 : p2;
+            } else {
+                ganador = null; // empate total
+            }
         }
 
-        if (p1.salud > 0 && p1.salud <= 20 && p1.salud > p2.salud) {
-            p1.puntuacion += partida.lowHealthVictory;
+        if (ganador != null) {
+            ganador.puntuacion += partida.victoryBonus;
+
+            // De paso, arreglo el umbral de low_health_victory (25% de SU vida máxima, no un 20 fijo)
+            int umbral = (int) (ganador.saludMaxima * 0.25);
+            if (ganador.salud > 0 && ganador.salud <= umbral) {
+                ganador.puntuacion += partida.lowHealthVictory;
+            }
         }
-        if (p2.salud > 0 && p2.salud <= 20 && p2.salud > p1.salud) {
-            p2.puntuacion += partida.lowHealthVictory;
-        }
+
+        return ganador;
     }
 
     private Partida buscarPartida(String id) {
