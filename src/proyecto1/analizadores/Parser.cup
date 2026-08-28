@@ -149,7 +149,7 @@ operando ::= INTEGER:v {: RESULT = new Literal(Integer.parseInt(v)); :}
            | RANDOM {: RESULT = new Variable(Variable.TipoVar.RANDOM); :}
            | accion:a {: RESULT = new Literal(a); :}
            | funcion_historial:f {: RESULT = f;:}
-           ;
+           ;    
 historial ::= SELF_HISTORY {: RESULT = FuncionHistorial.Target.SELF; :}
             | OPPONENT_HISTORY {: RESULT = FuncionHistorial.Target.OPPONENT; :}
             ;

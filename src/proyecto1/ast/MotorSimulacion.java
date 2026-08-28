@@ -16,7 +16,8 @@ public class MotorSimulacion {
     private List<String> partidasAEjecutar;
     private Random random;
     private StringBuilder bitacora;
-
+    private int semilla;
+    
     public MotorSimulacion(List<Estrategia> estrategiasAST, List<Partida> partidasAST, 
                            List<String> partidasAEjecutar, int semilla) {
         this.estrategiasAST = estrategiasAST;
@@ -57,9 +58,15 @@ public class MotorSimulacion {
 
         Combatiente p1 = new Combatiente(est1.id, est1.tipo);
         Combatiente p2 = new Combatiente(est2.id, est2.tipo);
-
+        
+        Random randP1 = new Random(this.semilla); 
+        Random randP2 = new Random(this.semilla + 1);
+        
         for (int ronda = 1; ronda <= partida.rounds; ronda++) {
-            // 1. Crear el contexto para esta ronda
+        // Generamos EXACTAMENTE UN VALOR aleatorio (0-100) por jugador en esta ronda            int randomP1 = randP1.nextInt(101);
+            int randomP2 = randP2.nextInt(101);
+            
+            //1. Crear el contexto con su número aleatorio fijo
             ContextoEjecucion ctx1 = new ContextoEjecucion(p1, p2, ronda, partida.rounds, random);
             ContextoEjecucion ctx2 = new ContextoEjecucion(p2, p1, ronda, partida.rounds, random);
 

@@ -13,13 +13,13 @@ public class ContextoEjecucion {
     public Combatiente opponent;   // El rival
     public int roundActual;
     public int totalRounds;
-    public Random generadorRandom; // Para evaluar la variable 'random'
+    public int valorRandomActual; // Para evaluar la variable 'random'
 
     public ContextoEjecucion(Combatiente self, Combatiente opponent, int roundActual, int totalRounds, Random generadorRandom) {
         this.self = self;
         this.opponent = opponent;
         this.roundActual = roundActual;
         this.totalRounds = totalRounds;
-        this.generadorRandom = generadorRandom;
+        this.valorRandomActual = valorRandomActual;
     }
 }

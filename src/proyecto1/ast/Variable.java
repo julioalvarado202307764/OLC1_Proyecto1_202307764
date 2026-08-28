@@ -31,7 +31,7 @@ public class Variable implements Expresion {
             case OPPONENT_RESOURCE: return ctx.opponent.recurso;
             case SELF_SCORE: return ctx.self.puntuacion;
             case OPPONENT_SCORE: return ctx.opponent.puntuacion;
-            case RANDOM: return ctx.generadorRandom.nextInt(101); // Retorna de 0 a 100
+            case RANDOM: return ctx.valorRandomActual;// Retorna de 0 a 100
             default: return 0;
         }
     }
