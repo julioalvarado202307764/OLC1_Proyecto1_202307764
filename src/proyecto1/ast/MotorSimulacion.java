@@ -75,9 +75,6 @@ public class MotorSimulacion {
             Accion accionP1 = decidirAccion(est1, ctx1);
             Accion accionP2 = decidirAccion(est2, ctx2);
 
-            p1.registrarAccion(accionP1);
-            p2.registrarAccion(accionP2);
-
             // 3. Resolver la ronda (Cálculo de daño, recursos y puntos)
             resolverInteraccion(p1, accionP1, p2, accionP2, partida);
 
@@ -121,53 +118,108 @@ public class MotorSimulacion {
         return est.accionElse;
     }
 private void resolverInteraccion(Combatiente p1, Accion a1, Combatiente p2, Accion a2, Partida partida) {
-        // 1. Cobrar Recursos (Si no tienen suficiente, fallan la acción)
-        boolean exitoP1 = consumirRecurso(p1, a1, partida);
-        boolean exitoP2 = consumirRecurso(p2, a2, partida);
+    // 1. Cobrar recursos y registrar historial (no depende del orden de turno)
+    boolean exitoP1 = consumirRecurso(p1, a1, partida);
+    boolean exitoP2 = consumirRecurso(p2, a2, partida);
 
-        // 2. Aplicar Mejoras (Prioridad 6)
-        if (exitoP1 && a1 == Accion.WAR_CRY) p1.buffProximoAtaque += 10;
-        if (exitoP2 && a2 == Accion.WAR_CRY) p2.buffProximoAtaque += 10;
+    if (exitoP1) p1.registrarAccion(a1);
+    if (exitoP2) p2.registrarAccion(a2);
 
-        // 3. Aplicar Recuperaciones (Prioridad 1)
-        if (exitoP1 && (a1 == Accion.REST || a1 == Accion.MEDITATE)) recuperarRecurso(p1, 25);
-        if (exitoP2 && (a2 == Accion.REST || a2 == Accion.MEDITATE)) recuperarRecurso(p2, 25);
+    // 2. Determinar quién actúa primero (PDF sección 7.4)
+    boolean primeroEsP1 = p1VaPrimero(a1, a2, p1, p2);
 
-        // 4. Aplicar Curaciones (Prioridad 5)
-        if (exitoP1 && a1 == Accion.HEALING_RUNE) aplicarCuracion(p1, 25, partida);
-        if (exitoP2 && a2 == Accion.HEALING_RUNE) aplicarCuracion(p2, 25, partida);
-
-        // 5. Calcular Daño Crudo (Prioridad 2 y 4)
-        int dmgA_P1 = exitoP2 ? calcularDañoReal(p2, a2, p1) : 0;
-        int dmgA_P2 = exitoP1 ? calcularDañoReal(p1, a1, p2) : 0;
-
-        // 6. Aplicar Defensas (Prioridad 7)
-        if (dmgA_P1 > 0 && exitoP1 && (a1 == Accion.SHIELD_BLOCK || a1 == Accion.MAGIC_BARRIER)) {
-            dmgA_P1 /= 2;
-            p1.puntuacion += partida.defPoint;
-            bitacora.append("   🛡️ ").append(p1.nombre).append(" bloqueó el 50% del daño.\n");
+    if (primeroEsP1) {
+        ejecutarAccionIndividual(p1, a1, exitoP1, p2, a2, exitoP2, partida);
+        if (p2.salud > 0) {
+            ejecutarAccionIndividual(p2, a2, exitoP2, p1, a1, exitoP1, partida);
         }
-        if (dmgA_P2 > 0 && exitoP2 && (a2 == Accion.SHIELD_BLOCK || a2 == Accion.MAGIC_BARRIER)) {
-            dmgA_P2 /= 2;
-            p2.puntuacion += partida.defPoint;
-            bitacora.append("   🛡️ ").append(p2.nombre).append(" bloqueó el 50% del daño.\n");
+    } else {
+        ejecutarAccionIndividual(p2, a2, exitoP2, p1, a1, exitoP1, partida);
+        if (p1.salud > 0) {
+            ejecutarAccionIndividual(p1, a1, exitoP1, p2, a2, exitoP2, partida);
         }
-
-        // 7. Aplicar Daño Final a la Vida
-        if (dmgA_P1 > 0) {
-            p1.salud -= dmgA_P1;
-            p2.puntuacion += partida.dmgPoint;
-        }
-        if (dmgA_P2 > 0) {
-            p2.salud -= dmgA_P2;
-            p1.puntuacion += partida.dmgPoint;
-        }
-
-        // 8. Verificar Combos
-        verificarYAplicarCombo(p1, partida, exitoP1);
-        verificarYAplicarCombo(p2, partida, exitoP2);
     }
 
+    // 3. Verificar combos (con los historiales ya actualizados)
+    verificarYAplicarCombo(p1, partida, exitoP1);
+    verificarYAplicarCombo(p2, partida, exitoP2);
+}
+
+// Resuelve TODOS los efectos de la acción de un solo combatiente
+private void ejecutarAccionIndividual(Combatiente actor, Accion accionActor, boolean exitoActor,
+                                       Combatiente rival, Accion accionRival, boolean exitoRival,
+                                       Partida partida) {
+    if (!exitoActor) return; // la acción falló por falta de recurso, no produce ningún efecto
+
+    switch (accionActor) {
+        case WAR_CRY:
+            actor.buffProximoAtaque += 10;
+            break;
+
+        case REST:
+        case MEDITATE:
+            recuperarRecurso(actor, 25);
+            break;
+
+        case HEALING_RUNE:
+            aplicarCuracion(actor, 25, partida);
+            break;
+
+        case SHIELD_BLOCK:
+        case MAGIC_BARRIER:
+            // No hace nada por sí sola aquí; se consulta cuando el RIVAL calcula su daño.
+            break;
+
+        case SLASH:
+        case HEAVY_STRIKE:
+        case ARCANE_BOLT:
+        case FIREBALL:
+            int danio = calcularDañoReal(actor, accionActor, rival);
+
+            boolean rivalSeDefiende = exitoRival &&
+                    (accionRival == Accion.SHIELD_BLOCK || accionRival == Accion.MAGIC_BARRIER);
+
+            if (danio > 0 && rivalSeDefiende) {
+                danio /= 2;
+                rival.puntuacion += partida.defPoint;
+                bitacora.append("   🛡️ ").append(rival.nombre).append(" bloqueó el 50% del daño.\n");
+            }
+
+            if (danio > 0) {
+                rival.salud -= danio;
+                actor.puntuacion += partida.dmgPoint;
+            }
+            break;
+    }
+}
+
+// Tabla de prioridad exacta del PDF (sección 7.4)
+private int obtenerPrioridad(Accion a) {
+    switch (a) {
+        case MAGIC_BARRIER:
+        case SHIELD_BLOCK:   return 7;
+        case WAR_CRY:         return 6;
+        case HEALING_RUNE:    return 5;
+        case ARCANE_BOLT:
+        case SLASH:           return 4;
+        case FIREBALL:
+        case HEAVY_STRIKE:    return 2;
+        case MEDITATE:
+        case REST:            return 1;
+        default:              return 0;
+    }
+}
+
+// Decide quién actúa primero: prioridad -> velocidad -> posición en players
+private boolean p1VaPrimero(Accion a1, Accion a2, Combatiente p1, Combatiente p2) {
+    int prio1 = obtenerPrioridad(a1);
+    int prio2 = obtenerPrioridad(a2);
+    if (prio1 != prio2) return prio1 > prio2;
+
+    if (p1.velocidad != p2.velocidad) return p1.velocidad > p2.velocidad;
+
+    return true; // empate total -> gana p1, que es el primero en "players: [...]"
+}
     // --- MÉTODOS AUXILIARES ---
 
     private boolean consumirRecurso(Combatiente c, Accion a, Partida partida) {
@@ -176,9 +228,10 @@ private void resolverInteraccion(Combatiente p1, Accion a1, Combatiente p2, Acci
             case SLASH: case ARCANE_BOLT: costo = 10; break;
             case SHIELD_BLOCK: costo = 15; break;
             case WAR_CRY: case MAGIC_BARRIER: costo = 20; break;
-            case HEAVY_STRIKE: case FIREBALL: costo = 25; break;
+            case HEAVY_STRIKE: costo = 25; break;
             case HEALING_RUNE: costo = 30; break;
             case REST: case MEDITATE: costo = 0; break;
+            case FIREBALL: costo = 30;
         }
         
         if (c.recurso >= costo) {
@@ -225,7 +278,7 @@ private void resolverInteraccion(Combatiente p1, Accion a1, Combatiente p2, Acci
             atacante.buffProximoAtaque = 0; 
         }
 
-        return Math.max(0, danioCalculado); // El daño mínimo es 0
+        return Math.max(1, danioCalculado); // El daño mínimo es 0
     }
 
     private void verificarYAplicarCombo(Combatiente p, Partida partida, boolean accionExitosa) {
