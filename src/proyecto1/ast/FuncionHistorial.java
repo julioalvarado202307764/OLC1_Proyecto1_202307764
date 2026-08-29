@@ -3,21 +3,29 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package proyecto1.ast;
+
 import java.util.ArrayList;
 import java.util.List;
+
 /**
  *
  * @author daish
  */
 public class FuncionHistorial implements Expresion {
-    
-    public enum TipoFuncion { GET_MOVE, LAST_MOVE, GET_MOVES_COUNT, GET_LAST_N_MOVES }
-    public enum Target { SELF, OPPONENT }
+
+    public enum TipoFuncion {
+        GET_MOVE, LAST_MOVE, GET_MOVES_COUNT, GET_LAST_N_MOVES
+    }
+
+    public enum Target {
+        SELF, OPPONENT
+    }
 
     private TipoFuncion tipo;
     private Target target;
     private Expresion argEntero;
     private Accion argAccion;
+    private FuncionHistorial fuenteAnidada;
 
     // Constructor para LAST_MOVE
     public FuncionHistorial(TipoFuncion tipo, Target target) {
@@ -39,6 +47,13 @@ public class FuncionHistorial implements Expresion {
         this.argAccion = argAccion;
     }
 
+    // Constructor para GET_MOVES_COUNT anidado: get_moves_count(get_last_n_moves(...), ACCION)
+    public FuncionHistorial(FuncionHistorial fuenteAnidada, Accion argAccion) {
+        this.tipo = TipoFuncion.GET_MOVES_COUNT;
+        this.fuenteAnidada = fuenteAnidada;
+        this.argAccion = argAccion;
+    }
+
     @Override
     public Object evaluar(ContextoEjecucion ctx) {
         // Obtenemos la lista del historial que nos interesa
@@ -46,23 +61,36 @@ public class FuncionHistorial implements Expresion {
 
         switch (tipo) {
             case LAST_MOVE:
-                if (history.isEmpty()) return null; // Aún no hay movimientos
+                if (history.isEmpty()) {
+                    return null; // Aún no hay movimientos
+                }
                 return history.get(history.size() - 1); // Devuelve el último de la lista
 
             case GET_MOVE:
-                // argEntero es el número de la ronda (empezando en 1)
-                int ronda = (int) argEntero.evaluar(ctx);
-                if (ronda > 0 && ronda <= history.size()) {
-                    return history.get(ronda - 1);
+                // PDF sección 6.5: los índices comienzan en 0.
+                int indice = (int) argEntero.evaluar(ctx);
+                if (indice < 0 || indice >= history.size()) {
+                    throw new RuntimeException("Error fatal: get_move fuera de rango (n=" + indice
+                            + ", tamaño del historial=" + history.size() + ").");
                 }
-                return null;
+                return history.get(indice);
 
-            case GET_MOVES_COUNT:
+            case GET_MOVES_COUNT: {
+                // Si viene de una función anidada (ej. get_last_n_moves), contamos sobre esa sublista.
+                // Si no, usamos el historial completo de self/opponent como antes.
+                @SuppressWarnings("unchecked")
+                List<Accion> fuente = (fuenteAnidada != null)
+                        ? (List<Accion>) fuenteAnidada.evaluar(ctx)
+                        : history;
+
                 int contador = 0;
-                for (Accion a : history) {
-                    if (a == argAccion) contador++;
+                for (Accion a : fuente) {
+                    if (a == argAccion) {
+                        contador++;
+                    }
                 }
                 return contador;
+            }
 
             case GET_LAST_N_MOVES:
                 int n = (int) argEntero.evaluar(ctx);

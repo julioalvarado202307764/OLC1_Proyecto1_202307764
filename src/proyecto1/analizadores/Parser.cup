@@ -9,8 +9,7 @@ parser code {:
     //GUARDAR OBJETOS VIVOS 
     public ArrayList<Estrategia> estrategiasAST = new ArrayList<>();
     public ArrayList<Partida> partidasAST = new ArrayList<>();
-    public ArrayList<String> partidasAEjecutar = new ArrayList<>();
-    public int semillaSimulacion = 0;
+    public ArrayList<EjecucionRun> listaEjecuciones = new ArrayList<>();
 
     public java.util.ArrayList<ErrorInfo> listaErroresSintacticos = new java.util.ArrayList<>();
 
@@ -26,7 +25,7 @@ parser code {:
 :}
 
 // ==========================================
-// 1. TERMINALES (¡Atención a String!)
+// 1. TERMINALES
 // ==========================================
 terminal String ID, INTEGER, FLOAT;
 
@@ -149,7 +148,8 @@ operando ::= INTEGER:v {: RESULT = new Literal(Integer.parseInt(v)); :}
            | RANDOM {: RESULT = new Variable(Variable.TipoVar.RANDOM); :}
            | accion:a {: RESULT = new Literal(a); :}
            | funcion_historial:f {: RESULT = f;:}
-           ;    
+           | LBRACKET lista_acciones_secuencia:lista RBRACKET {: RESULT = new Literal(lista); :}   
+           ;  
 historial ::= SELF_HISTORY {: RESULT = FuncionHistorial.Target.SELF; :}
             | OPPONENT_HISTORY {: RESULT = FuncionHistorial.Target.OPPONENT; :}
             ;
@@ -160,6 +160,8 @@ funcion_historial ::= GET_MOVE LPAREN historial:h COMMA operando:n RPAREN
                       {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.LAST_MOVE, h); :}
                     | GET_MOVES_COUNT LPAREN historial:h COMMA accion:a RPAREN 
                       {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.GET_MOVES_COUNT, h, a); :}
+                    | GET_MOVES_COUNT LPAREN funcion_historial:f COMMA accion:a RPAREN     // 👈 NUEVO
+                      {: RESULT = new FuncionHistorial(f, a); :}                            // 👈 NUEVO
                     | GET_LAST_N_MOVES LPAREN historial:h COMMA operando:n RPAREN 
                       {: RESULT = new FuncionHistorial(FuncionHistorial.TipoFuncion.GET_LAST_N_MOVES, h, n); :}
                     ;
@@ -197,8 +199,8 @@ lista_run ::= lista_run instruccion_run | instruccion_run ;
 
 instruccion_run ::= RUN LBRACKET lista_id_partidas:lista RBRACKET WITH LBRACE SEED COLON INTEGER:s RBRACE 
                     {: 
-                       partidasAEjecutar.addAll(lista);
-                       semillaSimulacion = Integer.parseInt(s); 
+                       int semilla = Integer.parseInt(s);
+                       listaEjecuciones.add(new EjecucionRun(lista, semilla));
                     :}
                   ;
 

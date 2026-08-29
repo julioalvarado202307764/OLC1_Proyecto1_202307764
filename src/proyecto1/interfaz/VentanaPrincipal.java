@@ -200,15 +200,17 @@ public class VentanaPrincipal extends JFrame {
                 // --- EJECUCIÓN DEL MOTOR DE SIMULACIÓN ---
                 txtSalida.append("\n Preparando Motor de Simulación...\n");
 
-                proyecto1.ast.MotorSimulacion motor = new proyecto1.ast.MotorSimulacion(
-                        parser.estrategiasAST,
-                        parser.partidasAST,
-                        parser.partidasAEjecutar,
-                        parser.semillaSimulacion
-                );
+                for (proyecto1.ast.EjecucionRun ejecucion : parser.listaEjecuciones) {
+                    proyecto1.ast.MotorSimulacion motor = new proyecto1.ast.MotorSimulacion(
+                            parser.estrategiasAST,
+                            parser.partidasAST,
+                            ejecucion.partidas,
+                            ejecucion.seed
+                    );
 
-                String reporteBatalla = motor.ejecutarSimulacion();
-                txtSalida.append(reporteBatalla);
+                    String reporteBatalla = motor.ejecutarSimulacion();
+                    txtSalida.append(reporteBatalla);
+                }
 
             } else {
                 txtSalida.append("\n Se encontraron errores en el código.\n");
