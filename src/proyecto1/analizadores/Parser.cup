@@ -1,9 +1,9 @@
-package proyecto1.analizadores;
+    package proyecto1.analizadores;
 
 import java_cup.runtime.*;
 import java.util.ArrayList;
 import java.util.List;
-import proyecto1.ast.*;
+        import proyecto1.ast.*;
 
 parser code {:
     //GUARDAR OBJETOS VIVOS 
@@ -19,8 +19,7 @@ parser code {:
     }
 
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
-        String lexema = (s.value != null) ? s.value.toString() : "Fin de archivo";
-        listaErroresSintacticos.add(new ErrorInfo("Sintáctico", "Error fatal cerca de: " + lexema, s.left, s.right));
+        
     }
 :}
 
@@ -200,6 +199,14 @@ lista_run ::= lista_run instruccion_run | instruccion_run ;
 instruccion_run ::= RUN LBRACKET lista_id_partidas:lista RBRACKET WITH LBRACE SEED COLON INTEGER:s RBRACE 
                     {: 
                        int semilla = Integer.parseInt(s);
+
+                       if (semilla <= 0) {
+                           listaErroresSintacticos.add(new ErrorInfo("Sintáctico",
+                               "La seed debe ser un entero mayor que cero (valor recibido: " + semilla + ")",
+                               sleft, sright));
+                           throw new RuntimeException("Error fatal: seed invalida (" + semilla + ").");
+                       }
+
                        listaEjecuciones.add(new EjecucionRun(lista, semilla));
                     :}
                   ;

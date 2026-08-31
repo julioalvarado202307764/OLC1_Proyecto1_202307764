@@ -33,9 +33,9 @@ La siguiente gramática describe formalmente la estructura sintáctica del lengu
            | "SLASH" | "HEAVY_STRIKE" | "SHIELD_BLOCK" | "WAR_CRY" | "REST"
 
 ## 3. Expresiones y Condiciones
-<condicion> ::= <condicion> "or" <condicion>
-              | <condicion> "and" <condicion>
-              | "not" <condicion>
+<condicion> ::= <condicion> "||" <condicion>
+              | <condicion> "&&" <condicion>
+              | "!" <condicion>
               | "(" <condicion> ")"
               | <operando> "==" <operando>
               | <operando> "!=" <operando>
@@ -59,11 +59,11 @@ La siguiente gramática describe formalmente la estructura sintáctica del lengu
              | <accion>
              | "[" <lista_acciones_secuencia> "]"
 
-<funcion_historial> ::= "get_move" "(" <historial> "," INTEGER ")"
+<funcion_historial> ::= "get_move" "(" <historial> "," <operando> ")"
                       | "last_move" "(" <historial> ")"
                       | "get_moves_count" "(" <historial> "," <accion> ")"
                       | "get_moves_count" "(" <funcion_historial> "," <accion> ")"
-                      | "get_last_n_moves" "(" <historial> "," INTEGER ")"
+                      | "get_last_n_moves" "(" <historial> "," <operando> ")"
 
 <historial> ::= "self_history" 
               | "opponent_history"

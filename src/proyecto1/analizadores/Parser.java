@@ -408,8 +408,7 @@ public class Parser extends java_cup.runtime.lr_parser {
     }
 
     public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
-        String lexema = (s.value != null) ? s.value.toString() : "Fin de archivo";
-        listaErroresSintacticos.add(new ErrorInfo("Sintáctico", "Error fatal cerca de: " + lexema, s.left, s.right));
+        
     }
 
 
@@ -1192,6 +1191,14 @@ class CUP$Parser$actions {
 		String s = (String)((java_cup.runtime.Symbol) CUP$Parser$stack.elementAt(CUP$Parser$top-1)).value;
 		 
                        int semilla = Integer.parseInt(s);
+
+                       if (semilla <= 0) {
+                           listaErroresSintacticos.add(new ErrorInfo("Sintáctico",
+                               "La seed debe ser un entero mayor que cero (valor recibido: " + semilla + ")",
+                               sleft, sright));
+                           throw new RuntimeException("Error fatal: seed invalida (" + semilla + ").");
+                       }
+
                        listaEjecuciones.add(new EjecucionRun(lista, semilla));
                     
               CUP$Parser$result = parser.getSymbolFactory().newSymbol("instruccion_run",5, ((java_cup.runtime.Symbol)CUP$Parser$stack.elementAt(CUP$Parser$top-9)), ((java_cup.runtime.Symbol)CUP$Parser$stack.peek()), RESULT);
