@@ -69,7 +69,7 @@ public class MotorSimulacion {
 
         for (int ronda = 0; ronda < partida.rounds; ronda++) {
             // Generamos EXACTAMENTE UN VALOR aleatorio (0.0, 1.0) por jugador en esta ronda            
-            double randomP1 = randP1.nextDouble();   
+            double randomP1 = randP1.nextDouble();
             double randomP2 = randP2.nextDouble();
 
             //1. Crear el contexto con su número aleatorio fijo
@@ -79,16 +79,24 @@ public class MotorSimulacion {
             // 2. Cada jugador decide su acción
             Accion accionP1 = decidirAccion(est1, ctx1);
             Accion accionP2 = decidirAccion(est2, ctx2);
-            
-            // 4. Reporte de la ronda
-            bitacora.append("Ronda ").append(ronda + 1).append(": ")
-                    .append(p1.nombre).append(" (").append(accionP1).append(") vs ")
-                    .append(p2.nombre).append(" (").append(accionP2).append(")\n");
 
-            // 3. Resolver la ronda (Cálculo de daño, recursos y puntos)
+            bitacora.append("--- RONDA ").append(ronda + 1).append(" ---\n");
+            bitacora.append("->").append(p1.nombre).append(" prepara [").append(accionP1).append("]\n");
+            bitacora.append("->").append(p2.nombre).append(" prepara [").append(accionP2).append("]\n");
+
             resolverInteraccion(p1, accionP1, p2, accionP2, partida);
 
-            // Si alguno muere antes de llegar al límite de rondas, termina la partida
+            String etiquetaP1 = (p1.tipo == TipoJugador.MAGE) ? "Maná" : "Energía";
+            String etiquetaP2 = (p2.tipo == TipoJugador.MAGE) ? "Maná" : "Energía";
+
+            bitacora.append("Estado -> ")
+                    .append(p1.nombre).append(" [HP: ").append(Math.max(0, p1.salud))
+                    .append(", ").append(etiquetaP1).append(": ").append(p1.recurso)
+                    .append(", Pts: ").append(p1.puntuacion).append("] | ")
+                    .append(p2.nombre).append(" [HP: ").append(Math.max(0, p2.salud))
+                    .append(", ").append(etiquetaP2).append(": ").append(p2.recurso)
+                    .append(", Pts: ").append(p2.puntuacion).append("]\n\n");
+
             if (p1.salud <= 0 || p2.salud <= 0) {
                 terminoPorMuerte = true;
                 break;
@@ -100,10 +108,10 @@ public class MotorSimulacion {
 
         // 6. Reportar resultado
         bitacora.append("\n--- RESULTADO FINAL ---\n");
-        bitacora.append(p1.nombre).append(" -> Vida: ").append(p1.salud)
+        bitacora.append(p1.nombre).append(" -> Vida: ").append(Math.max(0, p1.salud))
                 .append(" | Recurso: ").append(p1.recurso)
                 .append(" | Puntos: ").append(p1.puntuacion).append("\n");
-        bitacora.append(p2.nombre).append(" -> Vida: ").append(p2.salud)
+        bitacora.append(p2.nombre).append(" -> Vida: ").append(Math.max(0, p2.salud))
                 .append(" | Recurso: ").append(p2.recurso)
                 .append(" | Puntos: ").append(p2.puntuacion).append("\n");
 
